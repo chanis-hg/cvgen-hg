@@ -1,0 +1,51 @@
+/**
+ * Colour roles.
+ *
+ * The accent used to do seven jobs at once — brand, primary action, link,
+ * CV section heading, eyebrow label, focus ring, chip — and a colour that
+ * means everything means nothing. It now means one thing in the interface:
+ * this is what you act on.
+ *
+ * The document has its own, quieter set below. A CV is scanned in a few
+ * seconds and is often printed in black and white, so it carries one accent
+ * (the target job and the links) and lets near-black plus a hairline rule do
+ * the structural work.
+ */
+
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --ink: #14130f;
+  --ink-soft: #3d3a33;
+  --muted: #6b6860;
+  --border: #e6e3dc;
+  --border-strong: #cfcbc0;
+
+  /* interface accent: actions and focus, nothing else */
+  --accent: #3b4bff;
+  --accent-ink: #2433d6;
+  --accent-soft: #eceeff;
+
+  /* one alert tone. "Done" is quiet, "left to do" is the one that shows. */
+  --attention: #8a4b00;
+  --attention-soft: #fdf1df;
+  --attention-border: #f1d7ae;
+
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --danger-border: #f5c6c1;
+
+  /* document: printed and scanned, so deeper and calmer than the interface */
+  --doc-ink: #14130f;
+  --doc-soft: #4a4841;
+  --doc-muted: #6b6860;
+  --doc-accent: #1d3c78;
+  --doc-rule: #d9d5ca;
+
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 2px rgb(20 19 15 / 6%), 0 8px 24px rgb(20 19 15 / 6%);
+  --font-display: "Wura mi by GemmaS", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Google Sans Flex Variable", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --header-h: 60px;
+}

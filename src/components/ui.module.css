@@ -1,0 +1,173 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  transition:
+    background var(--t-fast) var(--e-out),
+    border-color var(--t-fast) var(--e-out),
+    box-shadow var(--t-fast) var(--e-out),
+    transform var(--t-fast) var(--e-out);
+  white-space: nowrap;
+}
+/* A press that answers back: on a phone this is often the only confirmation
+   the tap landed before the next screen paints. */
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.primary {
+  background: var(--ink);
+  color: #fff;
+}
+.primary:hover {
+  background: #2c2a24;
+}
+.accent {
+  background: var(--accent);
+  color: #fff;
+}
+.accent:hover {
+  background: var(--accent-ink);
+}
+.secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink);
+}
+.secondary:hover {
+  border-color: var(--ink);
+}
+.ghost {
+  background: transparent;
+  color: var(--ink);
+}
+.ghost:hover {
+  background: rgb(20 19 15 / 6%);
+}
+.small {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+.icon {
+  min-height: 36px;
+  width: 36px;
+  padding: 0;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.optional {
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 6px;
+}
+.control {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition:
+    border-color var(--t-fast) var(--e-out),
+    box-shadow var(--t-fast) var(--e-out);
+}
+.control:hover {
+  border-color: #cfcbc0;
+}
+.control:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+/* The soft halo above is almost invisible against the cream background, so a
+   keyboard user had a 1 px border as their only focus cue. */
+.control:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.control[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+textarea.control {
+  resize: vertical;
+  min-height: 96px;
+  line-height: 1.5;
+}
+.hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+.error {
+  composes: u-rise from global;
+  font-size: 13px;
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.dateField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.dateRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+/* two selects share the width of one field, so the native arrow has to be
+   paid for out of the padding or the label gets clipped */
+.dateRow .control {
+  padding-left: 8px;
+  padding-right: 4px;
+  font-size: 15px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 520px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

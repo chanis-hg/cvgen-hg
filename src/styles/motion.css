@@ -1,0 +1,109 @@
+/**
+ * Motion system.
+ *
+ * Three rules, applied everywhere:
+ *   1. Movement answers a question the user just asked ("did it save?",
+ *      "where did my entry go?", "which step am I on?"). Nothing moves to
+ *      decorate.
+ *   2. Only `transform` and `opacity` are animated. Both are composited, so a
+ *      low-end Android phone stays at 60 fps and nothing reflows.
+ *   3. Distances stay small (6-10 px) and durations short (120-260 ms).
+ *      Anything longer reads as lag on a form people fill in quickly.
+ *
+ * base.css already neutralises every animation under prefers-reduced-motion,
+ * and the keyframes below are written so that their end state is the resting
+ * state: if the animation never runs, the interface is still correct.
+ */
+
+:root {
+  --t-fast: 120ms;
+  --t-base: 180ms;
+  --t-slow: 260ms;
+  /* decelerate: fast out of the gate, settles gently — for things arriving */
+  --e-out: cubic-bezier(0.2, 0, 0, 1);
+  /* accelerate: for things leaving */
+  --e-in: cubic-bezier(0.4, 0, 1, 0.6);
+  /* a touch of overshoot, used only on the small confirmation marks */
+  --e-pop: cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+
+@keyframes cvRise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cvFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cvPop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* A row joining a list: it grows into place instead of shoving the rest down. */
+@keyframes cvRowIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/**
+ * CSS Modules rename any animation they reference, so a module cannot point at
+ * the keyframes above directly. These utility classes stay global and modules
+ * pull them in with `composes: u-rise from global`.
+ */
+.u-rise {
+  animation: cvRise var(--t-base) var(--e-out) both;
+}
+.u-fade {
+  animation: cvFade var(--t-base) var(--e-out) both;
+}
+.u-pop {
+  animation: cvPop var(--t-base) var(--e-pop) both;
+}
+.u-row-in {
+  animation: cvRowIn var(--t-base) var(--e-out) both;
+}
+.u-enter {
+  animation: cvRise var(--t-slow) var(--e-out) both;
+}
+/* A panel unfolding in place: it comes from where the button was, not from
+   nowhere. Used for the add forms that are now closed by default. */
+.u-unfold {
+  animation: cvUnfold var(--t-slow) var(--e-out) both;
+  transform-origin: top center;
+}
+
+@keyframes cvUnfold {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0) scaleY(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
