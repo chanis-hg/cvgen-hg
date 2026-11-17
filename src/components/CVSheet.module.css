@@ -104,6 +104,16 @@
   margin-bottom: 9px;
   break-inside: avoid;
 }
+/* A certificate is a single line, so it gets a fraction of the spacing an
+   experience needs. Five of them should not cost a third of the page. */
+.certEntry {
+  margin-bottom: 3px;
+  break-inside: avoid;
+}
+.certMeta {
+  font-weight: 400;
+  color: var(--doc-soft);
+}
 .entryHead {
   display: flex;
   justify-content: space-between;

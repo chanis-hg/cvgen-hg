@@ -2,6 +2,7 @@ export const CV_LABELS = {
   fr: {
     summary: "Profil",
     education: "Formation",
+    certifications: "Certifications",
     experience: "Expériences",
     projects: "Projets",
     skills: "Compétences",
@@ -23,6 +24,7 @@ export const CV_LABELS = {
   en: {
     summary: "Profile",
     education: "Education",
+    certifications: "Certifications",
     experience: "Experience",
     projects: "Projects",
     skills: "Skills",

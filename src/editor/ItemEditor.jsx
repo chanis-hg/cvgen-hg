@@ -3,6 +3,7 @@ import { useI18n } from "../i18n";
 import { newId } from "../data/model";
 import { Button, Row, TextField } from "../components/ui";
 import MonthYearField from "../components/MonthYearField";
+import { yearOptions } from "../lib/dates";
 import Icon from "../components/Icon";
 import FormulaHints from "./FormulaHints";
 import styles from "./Editor.module.css";
@@ -95,6 +96,27 @@ export default function ItemEditor({
           hint={f.hint ? t(f.hint) : undefined}
           value={draft[f.key] ?? ""}
           onChange={(v) => setValue(f.key, v)}
+        />
+      );
+    }
+    // A year on its own, kept as a string: the select options and the stored
+    // value are the same four digits, so nothing has to be parsed back.
+    if (f.type === "year") {
+      return (
+        <TextField
+          key={f.key}
+          label={t(f.label)}
+          hint={f.hint ? t(f.hint) : undefined}
+          value={draft[f.key] ?? ""}
+          onChange={(v) => setValue(f.key, v)}
+          select
+          options={[
+            { value: "", label: t("field.year.none") },
+            ...yearOptions().map((y) => ({ value: y, label: y })),
+          ]}
+          required={f.required}
+          optional={!f.required && f.showOptional}
+          optionalLabel={t("field.optional")}
         />
       );
     }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SITUATIONS, TEMPLATES, TEMPLATE_IDS, getTemplate, recommend, templatesFor } from "../data/templates";
 
-const KNOWN = ["summary", "education", "projects", "experience", "skills", "languages"];
+const KNOWN = ["summary", "education", "certifications", "projects", "experience", "skills", "languages"];
 
 describe("templates", () => {
   it("has the five models", () => {

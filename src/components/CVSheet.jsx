@@ -109,6 +109,31 @@ function renderSection(name, { data, labels, template }) {
           ))}
         </Section>
       );
+    case "certifications":
+      if (!data.certifications.length) return null;
+      return (
+        <Section key={name} title={labels.certifications}>
+          {data.certifications.map((item) => (
+            // The year stays inline instead of flush right. On a one-line
+            // entry a right-aligned run is lifted out of the reading order,
+            // and every year lands in a clump at the end of the extracted
+            // text, attached to nothing a tracking system can use.
+            <article key={item.id} className={styles.certEntry}>
+              <h3 className={styles.entryTitle}>
+                {item.link ? (
+                  <a href={toHref(item.link)} className={styles.link} target="_blank" rel="noreferrer">
+                    {item.name}
+                  </a>
+                ) : (
+                  item.name
+                )}
+                {item.issuer && <span className={styles.certMeta}> · {item.issuer}</span>}
+                {item.year && <span className={styles.certMeta}> · {item.year}</span>}
+              </h3>
+            </article>
+          ))}
+        </Section>
+      );
     case "projects":
       if (!data.projects.length) return null;
       return (

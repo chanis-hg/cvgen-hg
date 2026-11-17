@@ -46,6 +46,24 @@ describe("normalizeData", () => {
     expect(normalizeData({ photo: 12 }).photo).toBeNull();
     expect(normalizeData({ photo: "data:image/jpeg;base64,AAA" }).photo).toMatch(/^data:/);
   });
+  it("keeps a certification and its four-digit year", () => {
+    const [cert] = normalizeData({
+      certifications: [
+        { name: "Python Developer", issuer: "Sololearn", year: "2024", link: "sololearn.com/c/abc" },
+      ],
+    }).certifications;
+    expect(cert).toMatchObject({
+      name: "Python Developer",
+      issuer: "Sololearn",
+      year: "2024",
+      link: "sololearn.com/c/abc",
+    });
+  });
+  it("drops a year that is not four plausible digits", () => {
+    const years = ["juin 2024", "24", "1850", "20245", ""];
+    const out = normalizeData({ certifications: years.map((year) => ({ name: "X", year })) });
+    expect(out.certifications.map((c) => c.year)).toEqual(["", "", "", "", ""]);
+  });
 });
 
 describe("normalizeSettings", () => {

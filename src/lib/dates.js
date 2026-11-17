@@ -38,6 +38,11 @@ export function formatMonthYear(month, year) {
   return month ? `${month}/${year}` : year;
 }
 
+/** Newest year the editor offers; a certificate dated beyond it is a typo. */
+export function latestYear(now = new Date()) {
+  return now.getFullYear() + FUTURE_YEARS;
+}
+
 export function yearOptions(now = new Date()) {
   const latest = now.getFullYear() + FUTURE_YEARS;
   const years = [];

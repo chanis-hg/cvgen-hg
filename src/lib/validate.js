@@ -86,6 +86,11 @@ export function hasCvContent(data) {
   const hasName = Boolean(data.firstName.trim() || data.lastName.trim());
   const hasText = Boolean(data.jobTitle.trim() || data.summary.trim());
   const hasItems =
-    data.education.length + data.experiences.length + data.projects.length + data.skills.length > 0;
+    data.education.length +
+      data.certifications.length +
+      data.experiences.length +
+      data.projects.length +
+      data.skills.length >
+    0;
   return hasName && (hasText || hasItems);
 }

@@ -221,6 +221,7 @@ export default {
   "field.invalidPhone": "Numéro non valide (8 à 15 chiffres).",
   "field.invalidUrl": "Adresse non valide (exemple : github.com/nom).",
   "field.optional": "facultatif",
+  "field.year.none": "Année non précisée",
 
   "editor.fill": "Page remplie à {percent} %",
   "editor.fillOver": "{pages} pages : il faut raccourcir",
@@ -271,6 +272,20 @@ export default {
   "edu.empty": "Aucune formation pour l'instant.",
   "edu.emptyText": "Commencez par la plus récente : votre licence, votre bac, une formation courte.",
   "edu.hint": "Du plus récent au plus ancien. L'année suffit si vous ne vous souvenez plus du mois exact.",
+  "edu.title": "Formation",
+  "cert.title": "Certifications et formations en ligne",
+  "cert.name": "Intitulé du certificat",
+  "cert.name.ph": "Python Developer",
+  "cert.issuer": "Organisme",
+  "cert.issuer.ph": "Sololearn",
+  "cert.year": "Année",
+  "cert.link": "Lien de vérification",
+  "cert.link.hint":
+    "Si l'organisme fournit une page de vérification, collez-la : le recruteur pourra cliquer dessus dans le PDF.",
+  "cert.add": "Ajouter ce certificat",
+  "cert.empty": "Aucun certificat pour l'instant.",
+  "cert.emptyText":
+    "Un certificat en ligne compte, surtout sans expérience : Sololearn, LinkedIn Learning, OpenClassrooms, Coursera.",
   "exp.company": "Structure",
   "exp.company.ph": "Entreprise, ONG, atelier...",
   "exp.position": "Poste ou mission",

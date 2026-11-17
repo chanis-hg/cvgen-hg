@@ -186,8 +186,21 @@ export function EducationStep({ data, setField, textLang }) {
     ...dateFields("edu"),
     { key: "detail", label: "edu.detail", ph: "edu.detail.ph", showOptional: true },
   ];
+  const certFields = [
+    { key: "name", label: "cert.name", ph: "cert.name.ph", required: true },
+    { key: "issuer", label: "cert.issuer", ph: "cert.issuer.ph", half: true },
+    { key: "year", label: "cert.year", type: "year", half: true },
+    {
+      key: "link",
+      label: "cert.link",
+      hint: "cert.link.hint",
+      ph: null,
+      showOptional: true,
+    },
+  ];
   return (
     <div className={styles.stack}>
+      <h3 className={styles.subTitle}>{t("edu.title")}</h3>
       <p className={styles.mutedSmall}>{t("edu.hint")}</p>
       <ItemEditor
         items={data.education}
@@ -210,6 +223,21 @@ export function EducationStep({ data, setField, textLang }) {
         addLabel={t("edu.add")}
         emptyTitle={t("edu.empty")}
         emptyText={t("edu.emptyText")}
+        textLang={textLang}
+      />
+      <h3 className={styles.subTitle}>{t("cert.title")}</h3>
+      <ItemEditor
+        items={data.certifications}
+        onChange={(v) => setField("certifications", v)}
+        fields={certFields}
+        empty={{ name: "", issuer: "", year: "", link: "" }}
+        describe={(i) => ({
+          title: i.name,
+          subtitle: [i.issuer, i.year].filter(Boolean).join(" · "),
+        })}
+        addLabel={t("cert.add")}
+        emptyTitle={t("cert.empty")}
+        emptyText={t("cert.emptyText")}
         textLang={textLang}
       />
     </div>

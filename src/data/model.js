@@ -1,6 +1,6 @@
 export const STORAGE_KEY = "cvgen:v2";
 import { TEMPLATE_IDS } from "./templates";
-import { normalizeDate } from "../lib/dates";
+import { MIN_YEAR, latestYear, normalizeDate } from "../lib/dates";
 
 let counter = 0;
 export const newId = () => `${Date.now().toString(36)}${(counter++).toString(36)}`;
@@ -22,6 +22,7 @@ export const EMPTY_DATA = {
   maritalStatus: "",
   summary: "",
   education: [],
+  certifications: [],
   experiences: [],
   projects: [],
   skills: [],
@@ -56,6 +57,7 @@ export const LIMITS = {
   longText: 2000,
   items: {
     education: 15,
+    certifications: 30,
     experiences: 30,
     projects: 30,
     skills: 60,
@@ -74,6 +76,9 @@ const ITEM_SHAPES = {
     current: "flag",
     detail: "long",
   },
+  // A certificate carries a year, not a month: Sololearn and LinkedIn Learning
+  // date theirs by year alone, and asking for a month would invent precision.
+  certifications: { name: "text", issuer: "text", year: "year", link: "text" },
   experiences: {
     company: "text",
     position: "text",
@@ -118,6 +123,13 @@ function readField(kind, value, strict) {
     return valid ? value : 2;
   }
   if (kind === "date") return normalizeDate(readText(value, LIMITS.shortText, strict));
+  if (kind === "year") {
+    const text = readText(value, LIMITS.shortText, strict).trim();
+    if (!text) return "";
+    const valid = /^\d{4}$/.test(text) && Number(text) >= MIN_YEAR && Number(text) <= latestYear();
+    if (!valid) return strict ? fail() : "";
+    return text;
+  }
   return readText(value, kind === "long" ? LIMITS.longText : LIMITS.shortText, strict);
 }
 

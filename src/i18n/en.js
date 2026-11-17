@@ -216,6 +216,7 @@ export default {
   "field.invalidPhone": "Invalid number (8 to 15 digits).",
   "field.invalidUrl": "Invalid address (example: github.com/name).",
   "field.optional": "optional",
+  "field.year.none": "Year not given",
 
   "editor.fill": "Page {percent} % full",
   "editor.fillOver": "{pages} pages: needs shortening",
@@ -253,6 +254,20 @@ export default {
   "edu.empty": "No education yet.",
   "edu.emptyText": "Start with the most recent: your degree, your school-leaving exam, a short course.",
   "edu.hint": "Most recent first. The year alone is enough if you cannot recall the exact month.",
+  "edu.title": "Education",
+  "cert.title": "Certificates and online courses",
+  "cert.name": "Certificate name",
+  "cert.name.ph": "Python Developer",
+  "cert.issuer": "Issuer",
+  "cert.issuer.ph": "Sololearn",
+  "cert.year": "Year",
+  "cert.link": "Verification link",
+  "cert.link.hint":
+    "If the issuer gives you a verification page, paste it: the recruiter can click it straight from the PDF.",
+  "cert.add": "Add this certificate",
+  "cert.empty": "No certificates yet.",
+  "cert.emptyText":
+    "An online certificate counts, especially with no work experience: Sololearn, LinkedIn Learning, OpenClassrooms, Coursera.",
   "exp.company": "Organization",
   "exp.company.ph": "Company, NGO, workshop...",
   "exp.position": "Position or assignment",
