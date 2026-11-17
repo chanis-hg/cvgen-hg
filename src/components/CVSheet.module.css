@@ -50,6 +50,7 @@
   flex-wrap: wrap;
   gap: 4px 14px;
 }
+/* One colour for every clickable thing on the sheet: links, email, phone. */
 .link {
   color: var(--doc-accent);
   text-decoration: none;
@@ -121,6 +122,11 @@
   color: var(--doc-muted);
   white-space: nowrap;
   text-decoration: none;
+}
+/* A project link sits in the dates column but is clickable, so it takes the
+   link blue. Two classes outrank .dates whatever the order in this file. */
+.dates.link {
+  color: var(--doc-accent);
 }
 .org {
   font-size: 10pt;

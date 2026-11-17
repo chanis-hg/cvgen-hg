@@ -24,6 +24,20 @@ export function displayUrl(v) {
     .replace(/\/$/, "");
 }
 
+// A recruiter reading the PDF on screen should be able to tap the address or
+// the number. Both return null on anything that doesn't look like one, so a
+// half-typed field is printed as plain text rather than as a broken link.
+export function mailHref(v) {
+  const value = v.trim();
+  return isEmail(value) ? `mailto:${value}` : null;
+}
+
+export function telHref(v) {
+  if (!isPhone(v)) return null;
+  const cleaned = v.trim().replace(/[^\d+]/g, "");
+  return cleaned ? `tel:${cleaned}` : null;
+}
+
 export function validateIdentity(data) {
   const errors = {};
   if (!data.firstName.trim()) errors.firstName = "required";

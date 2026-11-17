@@ -7,7 +7,9 @@ import {
   isEmail,
   isPhone,
   isUrl,
+  mailHref,
   runChecks,
+  telHref,
   toHref,
   validateIdentity,
 } from "../lib/validate";
@@ -33,6 +35,19 @@ describe("field validators", () => {
     expect(toHref("github.com/a")).toBe("https://github.com/a");
     expect(toHref("http://x.com")).toBe("http://x.com");
     expect(displayUrl("https://github.com/a/")).toBe("github.com/a");
+  });
+  it("builds a mailto only from a real address", () => {
+    expect(mailHref("aicha@exemple.com")).toBe("mailto:aicha@exemple.com");
+    expect(mailHref("  aicha@exemple.com  ")).toBe("mailto:aicha@exemple.com");
+    expect(mailHref("aicha@exemple")).toBe(null);
+    expect(mailHref("")).toBe(null);
+  });
+  it("strips spacing and punctuation out of a tel: link", () => {
+    expect(telHref("+229 01 97 00 00 00")).toBe("tel:+2290197000000");
+    expect(telHref("97 00 00 00")).toBe("tel:97000000");
+    expect(telHref("(229) 01-97-00-00-00")).toBe("tel:2290197000000");
+    expect(telHref("12")).toBe(null);
+    expect(telHref("")).toBe(null);
   });
 });
 

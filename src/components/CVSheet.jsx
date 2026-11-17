@@ -1,6 +1,6 @@
 import { CV_LABELS } from "../i18n/cv";
 import { getTemplate } from "../data/templates";
-import { displayUrl, toHref } from "../lib/validate";
+import { displayUrl, mailHref, telHref, toHref } from "../lib/validate";
 import styles from "./CVSheet.module.css";
 
 function dates(item, labels) {
@@ -38,6 +38,18 @@ function ExternalLink({ value, className }) {
   return (
     <a href={toHref(value)} className={className} target="_blank" rel="noreferrer">
       {displayUrl(value)}
+    </a>
+  );
+}
+
+// Everything clickable carries the same blue, so the reader can tell at a
+// glance what responds to a tap. Plain text, like the city, stays in the ink
+// colour.
+function ContactBit({ item }) {
+  if (!item.href) return item.text;
+  return (
+    <a href={item.href} className={styles.link}>
+      {item.text}
     </a>
   );
 }
@@ -105,7 +117,7 @@ function renderSection(name, { data, labels, template }) {
             <article key={item.id} className={styles.entry}>
               <div className={styles.entryHead}>
                 <h3 className={styles.entryTitle}>{item.name}</h3>
-                {item.link && <ExternalLink value={item.link} className={styles.dates} />}
+                {item.link && <ExternalLink value={item.link} className={`${styles.dates} ${styles.link}`} />}
               </div>
               {item.stack && <p className={styles.org}>{item.stack}</p>}
               {item.description && <Lines text={item.description} />}
@@ -147,7 +159,11 @@ export default function CVSheet({ data, templateId, region, cvLang, id }) {
   const labels = CV_LABELS[cvLang] || CV_LABELS.fr;
   const showBenin = region === "benin";
   const name = `${data.firstName.trim()} ${data.lastName.trim()}`.trim();
-  const contact = [data.location, data.phone, data.email].map((v) => v.trim()).filter(Boolean);
+  const contact = [
+    { text: data.location.trim(), href: null },
+    { text: data.phone.trim(), href: telHref(data.phone) },
+    { text: data.email.trim(), href: mailHref(data.email) },
+  ].filter((c) => c.text);
   const links = ["linkedin", "github", "website"].filter((k) => data[k].trim());
   const civil = showBenin ? civilLine(data, labels) : "";
   const ctx = { data, labels, template };
@@ -180,7 +196,9 @@ export default function CVSheet({ data, templateId, region, cvLang, id }) {
             <h2 className={styles.sectionTitle}>{labels.contact}</h2>
             <ul className={styles.contactList}>
               {contact.map((c) => (
-                <li key={c}>{c}</li>
+                <li key={c.text}>
+                  <ContactBit item={c} />
+                </li>
               ))}
               {links.map((k) => (
                 <li key={k}>
@@ -207,7 +225,16 @@ export default function CVSheet({ data, templateId, region, cvLang, id }) {
         <div className={styles.headerText}>
           {identity}
           {template.showLinksFirst && linkRow}
-          {contact.length > 0 && <p className={styles.contact}>{contact.join(" · ")}</p>}
+          {contact.length > 0 && (
+            <p className={styles.contact}>
+              {contact.map((c, i) => (
+                <span key={c.text}>
+                  {i > 0 && " · "}
+                  <ContactBit item={c} />
+                </span>
+              ))}
+            </p>
+          )}
           {!template.showLinksFirst && linkRow}
           {civil && <p className={styles.civil}>{civil}</p>}
         </div>
