@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
 import { getTemplate } from "../data/templates";
-import { pdfFileName } from "../data/model";
-import { hasCvContent, runChecks, validateIdentity } from "../lib/validate";
+import { ACCENTS, ACCENT_IDS, DENSITY_IDS, SKILL_STYLES, TITLE_STYLES, pdfFileName } from "../data/model";
+import { hasCvContent, missingImportant, runChecks, stepForCheck, validateIdentity } from "../lib/validate";
 import CVSheet from "../components/CVSheet";
+import LayoutPicker from "../components/LayoutPicker";
+import ThemeToggle from "../components/ThemeToggle";
 import FitPage from "../components/FitPage";
 import Icon from "../components/Icon";
-import { Button } from "../components/ui";
+import { Button, Modal } from "../components/ui";
 import Checks from "./Checks";
 import InAppNotice from "./InAppNotice";
 import { EducationStep, ExperienceStep, FinishStep, IdentityStep, ProfileStep, SkillsStep } from "./Steps";
@@ -20,7 +22,13 @@ const PAGE_PADDING_PX = 53;
 /** Height of the content, in CSS pixels, inside an unscaled A4 sheet. */
 function measureContent(sheet) {
   const sheetRect = sheet.getBoundingClientRect();
-  const ratio = sheet.offsetHeight ? sheetRect.height / sheet.offsetHeight : 1;
+  // Une feuille qui n'est pas affichée — l'onglet Formulaire sur téléphone,
+  // ou le tout premier rendu — n'a aucune boîte à mesurer. Sans ce
+  // garde-fou, (0 - 0) / 0 vaut NaN, et NaN traverse Math.max, Math.min et
+  // Math.round sans jamais être arrêté : « Page remplie à NaN % »
+  // s'affichait à l'écran.
+  if (!sheetRect.height || !sheet.offsetHeight) return 0;
+  const ratio = sheetRect.height / sheet.offsetHeight;
   let bottom = 0;
   sheet.querySelectorAll("header, section, p").forEach((el) => {
     bottom = Math.max(bottom, (el.getBoundingClientRect().bottom - sheetRect.top) / ratio);
@@ -30,7 +38,8 @@ function measureContent(sheet) {
 
 export function measurePages(sheet) {
   if (!sheet) return 1;
-  return Math.max(1, Math.ceil(measureContent(sheet) / PAGE_CONTENT_PX));
+  const n = Math.ceil(measureContent(sheet) / PAGE_CONTENT_PX);
+  return Number.isFinite(n) ? Math.max(1, n) : 1;
 }
 
 /**
@@ -42,7 +51,8 @@ export function measurePages(sheet) {
  */
 export function measureFill(sheet) {
   if (!sheet) return 0;
-  return Math.max(0, Math.min(100, Math.round((measureContent(sheet) / PAGE_CONTENT_PX) * 100)));
+  const pct = Math.round((measureContent(sheet) / PAGE_CONTENT_PX) * 100);
+  return Number.isFinite(pct) ? Math.max(0, Math.min(100, pct)) : 0;
 }
 
 const SAVE_TEXTS = { saving: "editor.saving", saved: "editor.saved", error: "editor.notSaved" };
@@ -58,10 +68,14 @@ export function printCV(data) {
   window.print();
 }
 
-export default function Editor({ cv, navigate }) {
-  const { t, lang } = useI18n();
+export default function Editor({ cv, navigate, theme, onToggleTheme }) {
+  const { t } = useI18n();
   const { data, settings, setField, patchSettings, replaceAll, reset, saveStatus } = cv;
   const [tab, setTab] = useState("form");
+  // Sur téléphone l'aperçu passe en premier et les réglages se replient :
+  // quelqu'un qui tape sur « Aperçu » vient voir son CV, pas le configurer.
+  // Sur ordinateur il y a la place pour les deux, donc rien ne se replie.
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [zoom, setZoom] = useState("fit");
   const [showErrors, setShowErrors] = useState(false);
   const [pages, setPages] = useState(1);
@@ -87,6 +101,7 @@ export default function Editor({ cv, navigate }) {
   useEffect(() => {
     let frame = 0;
     const run = () => {
+      cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const sheet = document.querySelector("[data-preview] [data-cv-sheet]");
         setPages(measurePages(sheet));
@@ -95,18 +110,64 @@ export default function Editor({ cv, navigate }) {
     };
     run();
     document.fonts?.ready?.then(run);
-    return () => cancelAnimationFrame(frame);
-    // `tab` matters: on a phone the preview panel is display:none behind the
-    // form tab, so the sheet measures zero until the tab is actually shown.
-  }, [data, settings.template, settings.region, settings.cvLang, tab]);
 
-  const checks = useMemo(
-    () => runChecks(data, { pages, region: settings.region }),
-    [data, pages, settings.region],
-  );
+    // Au moment où l'onglet Aperçu s'affiche sur téléphone, la feuille n'a
+    // pas encore sa taille définitive : une seule mesure tombe sur zéro et
+    // y reste. L'observateur remesure dès que le panneau prend ses
+    // dimensions, ce qui couvre aussi la rotation de l'écran et le
+    // redimensionnement d'une fenêtre.
+    let observer;
+    const panel = document.querySelector("[data-preview]");
+    if (panel && typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(run);
+      observer.observe(panel);
+    }
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
+    // La disposition, le style des titres, le rendu des compétences et la
+    // densité changent tous la hauteur du contenu : sans eux dans cette
+    // liste, le nombre de pages affiché reste celui d'avant le changement.
+  }, [
+    data,
+    settings.template,
+    settings.region,
+    settings.cvLang,
+    settings.layout,
+    settings.titleStyle,
+    settings.skillStyle,
+    settings.density,
+    tab,
+  ]);
+
+  const checks = useMemo(() => runChecks(data, { region: settings.region }), [data, settings.region]);
+  // Un CV auquel il manque l'essentiel part quand même si la personne
+  // insiste : c'est son CV, pas le nôtre. Mais elle doit l'avoir su avant
+  // de l'envoyer à un recruteur, pas après.
+  const [missing, setMissing] = useState(null);
+
   const download = () => {
     setDownloadTried(true);
-    if (hasCvContent(data)) printCV(data);
+    if (!hasCvContent(data)) return;
+    const gaps = missingImportant(checks);
+    if (gaps.length > 0) {
+      setMissing(gaps);
+      return;
+    }
+    printCV(data);
+  };
+
+  const downloadAnyway = () => {
+    setMissing(null);
+    printCV(data);
+  };
+
+  const fixFirstGap = () => {
+    const first = missing?.[0];
+    setMissing(null);
+    if (first) goStep(stepForCheck(first.id));
   };
   const showEmptyError = downloadTried && !hasCvContent(data);
   const printRoot = document.getElementById("print-root");
@@ -131,7 +192,6 @@ export default function Editor({ cv, navigate }) {
             data={data}
             settings={settings}
             checks={checks}
-            pages={pages}
             onImport={replaceAll}
             onReset={reset}
             onDownload={download}
@@ -155,19 +215,10 @@ export default function Editor({ cv, navigate }) {
           <span className={styles.brand}>{t("app.name")}</span>
         </button>
         <div className={styles.headerRight}>
-          <div className={styles.segment} role="group" aria-label={t("nav.uiLang")}>
-            {["fr", "en"].map((l) => (
-              <button
-                key={l}
-                type="button"
-                aria-pressed={lang === l}
-                onClick={() => patchSettings({ lang: l })}
-                className={styles.segmentButton}
-              >
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+          {/* The interface language lives in the footer now. Two language
+              controls on one screen — this one and "Langue du CV" below —
+              meant different things and read as a contradiction. */}
           <Button variant="accent" onClick={download} className={styles.headerDownload}>
             <Icon name="download" size={18} />
             {t("editor.download")}
@@ -271,7 +322,18 @@ export default function Editor({ cv, navigate }) {
           </section>
 
           <section className={styles.right} aria-label={t("editor.preview")}>
-            <div className={styles.toolbar}>
+            <button
+              type="button"
+              className={styles.toolsToggle}
+              aria-expanded={toolsOpen}
+              aria-controls="cv-toolbar"
+              onClick={() => setToolsOpen((v) => !v)}
+            >
+              <Icon name="edit" size={18} />
+              {t("editor.customise")}
+              <Icon name={toolsOpen ? "up" : "down"} size={16} />
+            </button>
+            <div id="cv-toolbar" className={`${styles.toolbar} ${toolsOpen ? styles.toolbarOpen : ""}`}>
               <div className={styles.toolbarGroup}>
                 <span className={styles.toolbarLabel}>{t("editor.model")}</span>
                 <strong>{t(`tpl.${template.id}.name`)}</strong>
@@ -314,6 +376,80 @@ export default function Editor({ cv, navigate }) {
                   ))}
                 </div>
               </div>
+              <div className={styles.toolbarGroup}>
+                <span className={styles.toolbarLabel}>{t("editor.layout")}</span>
+                <LayoutPicker
+                  value={settings.layout}
+                  onChange={(id) => patchSettings({ layout: id })}
+                  accentColor={ACCENTS[settings.accent]}
+                />
+              </div>
+              <div className={styles.toolbarGroup}>
+                <span className={styles.toolbarLabel}>{t("editor.accent")}</span>
+                <div className={styles.swatches} role="group" aria-label={t("editor.accent")}>
+                  {ACCENT_IDS.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      aria-pressed={settings.accent === id}
+                      onClick={() => patchSettings({ accent: id })}
+                      className={styles.swatch}
+                      style={{ "--sw": ACCENTS[id] }}
+                      title={t(`editor.accent.${id}`)}
+                    >
+                      <span className={styles.srOnly}>{t(`editor.accent.${id}`)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.toolbarGroup}>
+                <span className={styles.toolbarLabel}>{t("editor.titleStyle")}</span>
+                <div className={styles.segment} role="group" aria-label={t("editor.titleStyle")}>
+                  {TITLE_STYLES.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      aria-pressed={settings.titleStyle === id}
+                      onClick={() => patchSettings({ titleStyle: id })}
+                      className={styles.segmentButton}
+                    >
+                      {t(`editor.titleStyle.${id}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.toolbarGroup}>
+                <span className={styles.toolbarLabel}>{t("editor.skillStyle")}</span>
+                <div className={styles.segment} role="group" aria-label={t("editor.skillStyle")}>
+                  {SKILL_STYLES.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      aria-pressed={settings.skillStyle === id}
+                      onClick={() => patchSettings({ skillStyle: id })}
+                      className={styles.segmentButton}
+                    >
+                      {t(`editor.skillStyle.${id}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.toolbarGroup}>
+                <span className={styles.toolbarLabel}>{t("editor.density")}</span>
+                <div className={styles.segment} role="group" aria-label={t("editor.density")}>
+                  {DENSITY_IDS.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      aria-pressed={settings.density === id}
+                      onClick={() => patchSettings({ density: id })}
+                      className={styles.segmentButton}
+                    >
+                      {t(`editor.density.${id}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className={styles.previewBar}>
               <div className={styles.fill}>
@@ -321,11 +457,7 @@ export default function Editor({ cv, navigate }) {
                   {pages > 1 ? t("editor.fillOver", { pages }) : t("editor.fill", { percent: fill })}
                 </span>
                 <span className={styles.fillTrack} aria-hidden="true">
-                  <span
-                    className={styles.fillBar}
-                    data-over={pages > 1}
-                    style={{ width: `${Math.min(100, fill)}%` }}
-                  />
+                  <span className={styles.fillBar} style={{ width: `${Math.min(100, fill)}%` }} />
                 </span>
               </div>
               <Button
@@ -341,23 +473,53 @@ export default function Editor({ cv, navigate }) {
             </div>
             <div className={styles.sheetWrap} data-preview>
               <FitPage zoom={zoom}>
-                <div key={`${settings.template}-${settings.region}`} className={styles.sheetSwap}>
+                <div
+                  key={`${settings.template}-${settings.region}-${settings.accent}-${settings.density}-${settings.layout}-${settings.titleStyle}-${settings.skillStyle}`}
+                  className={styles.sheetSwap}
+                >
                   <CVSheet
                     data={data}
                     templateId={settings.template}
                     region={settings.region}
                     cvLang={settings.cvLang}
+                    accent={settings.accent}
+                    density={settings.density}
+                    layout={settings.layout}
+                    titleStyle={settings.titleStyle}
+                    skillStyle={settings.skillStyle}
+                    titleStyle={settings.titleStyle}
+                    skillStyle={settings.skillStyle}
                   />
                 </div>
               </FitPage>
             </div>
             {/* on the last step the same list sits in the left panel, beside
                 the sentence that asks the user to act on it */}
-            {!isFinish && <Checks checks={checks} pages={pages} />}
+            {!isFinish && <Checks checks={checks} />}
           </section>
         </div>
       </main>
 
+      <Modal open={Boolean(missing)} onClose={() => setMissing(null)} label={t("gate.title")}>
+        <div className={styles.gateBody}>
+          <h2 className={styles.gateTitle}>{t("gate.title")}</h2>
+          <p className={styles.gateText}>{t("gate.text")}</p>
+          <ul className={styles.gateList}>
+            {(missing ?? []).map((c) => (
+              <li key={c.id}>{t(`check.${c.id}`)}</li>
+            ))}
+          </ul>
+          <p className={styles.gateAsk}>{t("gate.ask")}</p>
+          <div className={styles.gateActions}>
+            <Button variant="accent" onClick={fixFirstGap}>
+              {t("gate.fix")}
+            </Button>
+            <Button variant="ghost" onClick={downloadAnyway}>
+              {t("gate.anyway")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
       {printRoot &&
         createPortal(
           <CVSheet
@@ -365,6 +527,11 @@ export default function Editor({ cv, navigate }) {
             templateId={settings.template}
             region={settings.region}
             cvLang={settings.cvLang}
+            accent={settings.accent}
+            density={settings.density}
+            layout={settings.layout}
+            titleStyle={settings.titleStyle}
+            skillStyle={settings.skillStyle}
           />,
           printRoot,
         )}

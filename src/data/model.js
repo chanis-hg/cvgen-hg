@@ -1,5 +1,6 @@
 export const STORAGE_KEY = "cvgen:v2";
 import { TEMPLATE_IDS } from "./templates";
+import { LAYOUT_IDS } from "./layouts";
 import { MIN_YEAR, latestYear, normalizeDate } from "../lib/dates";
 
 let counter = 0;
@@ -29,11 +30,56 @@ export const EMPTY_DATA = {
   languages: [],
 };
 
+/**
+ * Accents a CV can be printed in.
+ *
+ * Every one of these clears 5.4:1 against white, so a recruiter reading the
+ * PDF on a phone in daylight can read a section title whichever the person
+ * picked. "ink" is the no-colour option: the sheet falls back to the body
+ * colour and prints as plain black.
+ */
+export const ACCENTS = {
+  ink: "#14130f",
+  navy: "#1d3c78",
+  blue: "#2456c7",
+  slate: "#3d4a5c",
+  wine: "#8c2f39",
+  clay: "#a8502a",
+  plum: "#6b3a7a",
+  copper: "#8a5a18",
+};
+export const ACCENT_IDS = Object.keys(ACCENTS);
+
+/**
+ * How tight the sheet is set.
+ *
+ * This is the one control that trades space against legibility, so it is the
+ * person's to make: "ample" reads better and runs longer, "compact" fits more
+ * on a page. The multiplier scales every size on the sheet at once, which
+ * keeps the proportions the templates were drawn with.
+ */
+export const DENSITIES = { compact: 0.92, normal: 1, ample: 1.09 };
+export const DENSITY_IDS = Object.keys(DENSITIES);
+
+// Le style des titres fait plus pour la personnalité d'un CV que la
+// disposition elle-même : à géométrie identique, une pastille arrondie et
+// un filet sobre ne racontent pas la même chose.
+export const TITLE_STYLES = ["filet", "pastille", "barre", "nu"];
+
+// Les compétences en puces arrondies se lisent mieux qu'une longue ligne
+// séparée par des points, mais la ligne reste la plus sûre à l'extraction.
+export const SKILL_STYLES = ["ligne", "puces", "pastilles"];
+
 export const DEFAULT_SETTINGS = {
   template: "stage",
   region: "benin",
   cvLang: "fr",
   lang: "fr",
+  accent: "navy",
+  density: "normal",
+  layout: "classique",
+  titleStyle: "filet",
+  skillStyle: "ligne",
   step: 0,
 };
 
@@ -178,6 +224,11 @@ export function normalizeSettings(raw) {
   if (raw.region === "benin" || raw.region === "international") s.region = raw.region;
   if (raw.cvLang === "fr" || raw.cvLang === "en") s.cvLang = raw.cvLang;
   if (raw.lang === "fr" || raw.lang === "en") s.lang = raw.lang;
+  if (ACCENT_IDS.includes(raw.accent)) s.accent = raw.accent;
+  if (DENSITY_IDS.includes(raw.density)) s.density = raw.density;
+  if (LAYOUT_IDS.includes(raw.layout)) s.layout = raw.layout;
+  if (TITLE_STYLES.includes(raw.titleStyle)) s.titleStyle = raw.titleStyle;
+  if (SKILL_STYLES.includes(raw.skillStyle)) s.skillStyle = raw.skillStyle;
   if (Number.isInteger(raw.step) && raw.step >= 0 && raw.step <= 5) s.step = raw.step;
   return s;
 }

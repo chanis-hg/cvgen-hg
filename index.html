@@ -3,15 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Wúrà — Ton parcours, ton atout</title>
+    <title>Wura — Ton parcours, ton atout</title>
     <meta
       name="description"
-      content="Wúrà : créez un CV clair en quelques minutes : cinq modèles, mode Bénin ou International, PDF A4 avec texte réel. Gratuit, sans compte."
+      content="Wura : créez un CV clair en quelques minutes : cinq modèles, mode Bénin ou International, PDF A4 avec texte réel. Gratuit, sans compte."
     />
-    <meta name="theme-color" content="#14130f" />
+    <meta name="theme-color" content="#3b4bff" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    <script>
+      // Posé avant la première peinture : sans ça la page s'affiche en clair
+      // une fraction de seconde avant de basculer, et le clignotement se voit.
+      (function () {
+        try {
+          var v = localStorage.getItem("wura:theme");
+          if (v === "light" || v === "dark") document.documentElement.setAttribute("data-theme", v);
+          var dark = v === "dark" || (!v && matchMedia("(prefers-color-scheme: dark)").matches);
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m) m.setAttribute("content", dark ? "#0b0f2e" : "#f6f7fb");
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

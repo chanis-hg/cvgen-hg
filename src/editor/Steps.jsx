@@ -5,6 +5,9 @@ import { validateIdentity } from "../lib/validate";
 import { Button, Row, TextField } from "../components/ui";
 import Icon from "../components/Icon";
 import ItemEditor from "./ItemEditor";
+import Suggest from "../components/Suggest";
+import { kindOf } from "../lib/validate";
+import { suggestionsFor } from "../data/suggestions";
 import SkillsEditor from "./SkillsEditor";
 import PhotoField from "./PhotoField";
 import SummaryAssistant from "./SummaryAssistant";
@@ -47,13 +50,14 @@ export function IdentityStep({ data, setField, region, showErrors }) {
           {...field("lastName")}
         />
       </Row>
-      <TextField
+      <Suggest
         label={t("field.jobTitle")}
         hint={t("field.jobTitle.hint")}
         placeholder={t("field.jobTitle.ph")}
-        required
+        options={suggestionsFor("jobTitle")}
+        value={data.jobTitle}
+        onChange={(v) => setField("jobTitle", v)}
         error={errorText(t, errors.jobTitle)}
-        {...field("jobTitle")}
       />
       <TextField
         label={t("field.email")}
@@ -181,14 +185,14 @@ const dateFields = (prefix) => [
 export function EducationStep({ data, setField, textLang }) {
   const { t } = useI18n();
   const fields = [
-    { key: "school", label: "edu.school", ph: "edu.school.ph", required: true },
-    { key: "degree", label: "edu.degree", ph: "edu.degree.ph" },
+    { key: "school", label: "edu.school", ph: "edu.school.ph", required: true, suggest: "school" },
+    { key: "degree", label: "edu.degree", ph: "edu.degree.ph", suggest: "degree" },
     ...dateFields("edu"),
     { key: "detail", label: "edu.detail", ph: "edu.detail.ph", showOptional: true },
   ];
   const certFields = [
     { key: "name", label: "cert.name", ph: "cert.name.ph", required: true },
-    { key: "issuer", label: "cert.issuer", ph: "cert.issuer.ph", half: true },
+    { key: "issuer", label: "cert.issuer", ph: "cert.issuer.ph", half: true, suggest: "issuer" },
     { key: "year", label: "cert.year", type: "year", half: true },
     {
       key: "link",
@@ -248,7 +252,7 @@ export function ExperienceStep({ data, setField, textLang }) {
   const { t } = useI18n();
   const expFields = [
     { key: "company", label: "exp.company", ph: "exp.company.ph", required: true },
-    { key: "position", label: "exp.position", ph: "exp.position.ph" },
+    { key: "position", label: "exp.position", ph: "exp.position.ph", suggest: "position" },
     ...dateFields("exp"),
     {
       key: "description",
@@ -262,7 +266,7 @@ export function ExperienceStep({ data, setField, textLang }) {
   ];
   const projFields = [
     { key: "name", label: "proj.name", ph: "proj.name.ph", required: true },
-    { key: "stack", label: "proj.stack", ph: "proj.stack.ph" },
+    { key: "stack", label: "proj.stack", ph: "proj.stack.ph", suggest: "stack" },
     { key: "link", label: "proj.link", ph: null, showOptional: true },
     {
       key: "description",
@@ -319,7 +323,7 @@ export function ExperienceStep({ data, setField, textLang }) {
 export function SkillsStep({ data, setField, textLang }) {
   const { t } = useI18n();
   const langFields = [
-    { key: "name", label: "lang.name", required: true, half: true },
+    { key: "name", label: "lang.name", required: true, half: true, suggest: "languages" },
     {
       key: "level",
       label: "lang.level",
@@ -351,13 +355,17 @@ export function SkillsStep({ data, setField, textLang }) {
   );
 }
 
-export function FinishStep({ data, settings, checks, pages, onImport, onReset, onDownload, onGoToStep }) {
+export function FinishStep({ data, settings, checks, onImport, onReset, onDownload, onGoToStep }) {
   const { t } = useI18n();
   const file = useRef(null);
   const [message, setMessage] = useState("");
   const [printed, setPrinted] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState(false);
-  const todo = (checks || []).filter((c) => !c.ok);
+  // Seuls les défauts sont comptés comme « à revoir ». Les conseils sont
+  // listés en dessous, sans alarme : on n'envoie pas quelqu'un corriger
+  // quelque chose que l'outil ne sait pas vérifier.
+  const todo = (checks || []).filter((c) => !c.ok && kindOf(c.id) === "fix");
+  const tips = (checks || []).filter((c) => !c.ok && kindOf(c.id) === "tip");
 
   const doExport = () => {
     const blob = new Blob([exportJson(data, settings)], {
@@ -412,10 +420,7 @@ export function FinishStep({ data, settings, checks, pages, onImport, onReset, o
               {todo.map((c) => (
                 <li key={c.id} className={`${styles.check} ${styles.checkTodo}`}>
                   <Icon name="warning" size={18} />
-                  <span>
-                    {t(`check.${c.id}`)}
-                    {c.id === "pages" ? ` (${pages})` : ""}
-                  </span>
+                  <span>{t(`check.${c.id}`)}</span>
                 </li>
               ))}
             </ul>
@@ -424,6 +429,19 @@ export function FinishStep({ data, settings, checks, pages, onImport, onReset, o
                 {t("finish.backToSteps")}
               </Button>
             )}
+          </>
+        )}
+        {tips.length > 0 && (
+          <>
+            <h4 className={styles.tipsTitle}>{t("editor.tips")}</h4>
+            <ul className={styles.plainList}>
+              {tips.map((c) => (
+                <li key={c.id} className={`${styles.check} ${styles.checkTip}`}>
+                  <Icon name="info" size={18} />
+                  <span>{t(`check.${c.id}`)}</span>
+                </li>
+              ))}
+            </ul>
           </>
         )}
       </div>

@@ -3,6 +3,8 @@ import { useI18n } from "../i18n";
 import { newId } from "../data/model";
 import { Button, Row, TextField } from "../components/ui";
 import MonthYearField from "../components/MonthYearField";
+import Suggest from "../components/Suggest";
+import { suggestionsFor } from "../data/suggestions";
 import { yearOptions } from "../lib/dates";
 import Icon from "../components/Icon";
 import FormulaHints from "./FormulaHints";
@@ -120,6 +122,28 @@ export default function ItemEditor({
         />
       );
     }
+    // Un champ ne reçoit de liste que s'il la déclare lui-même. Se fier au
+    // nom de la clé mélangerait les rubriques : « name » désigne aussi bien
+    // une certification qu'un projet ou une langue.
+    const list = f.suggest ? suggestionsFor(f.suggest) : null;
+    if (list) {
+      return (
+        <Suggest
+          key={f.key}
+          label={t(f.label)}
+          hint={f.hint ? t(f.hint) : undefined}
+          placeholder={f.ph ? t(f.ph) : undefined}
+          options={list}
+          value={draft[f.key] ?? ""}
+          onChange={(v) => setValue(f.key, v)}
+          optional={!f.required && f.showOptional}
+          optionalLabel={t("field.optional")}
+          required={f.required}
+          error={missing && f.required ? t("list.nameRequired") : undefined}
+        />
+      );
+    }
+
     const isSelect = f.type === "select";
     return (
       <TextField

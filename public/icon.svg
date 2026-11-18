@@ -1,1 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><title>Wúrà</title><rect width="512" height="512" rx="112" fill="#14130f"/><path d="M176 160h160l24 56H152z" fill="#e3b45c"/><path d="M152 240h208l24 56H128z" fill="#cf9c41"/><path d="M128 320h256l24 56H104z" fill="#c08a2e"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Wura">
+  <title>Wura</title>
+  <rect width="64" height="64" rx="14" fill="#3b4bff"/>
+  <path d="M11 17 H21 L26 38 L31 17 H34 L39 38 L44 17 H54 L45 47 H35 L32 36 L29 47 H20 Z" fill="#f7f6f3"/>
+</svg>

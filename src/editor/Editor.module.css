@@ -43,7 +43,7 @@
   display: inline-flex;
   padding: 3px;
   border-radius: 999px;
-  background: #ece9e1;
+  background: var(--subtle);
 }
 .segmentButton {
   min-height: 40px;
@@ -98,10 +98,59 @@
   padding: 20px 24px 40px;
   height: calc(100dvh - var(--header-h));
   overflow-y: auto;
-  background: #ebe8e0;
+  background: var(--subtle);
+}
+
+/* Sur ordinateur le bouton n'existe pas : les réglages sont déjà visibles
+   et il y a la place pour eux à côté de l'aperçu. */
+.toolsToggle {
+  display: none;
 }
 
 @media (max-width: 900px) {
+  /* L'ordre d'affichage change, pas le balisage : l'ordre du DOM reste
+     celui que lit un lecteur d'écran et que suit la tabulation.
+     Tous les enfants doivent avoir un ordre explicite — celui qu'on oublie
+     garde order:0 et se retrouve propulsé en tête. */
+  .right {
+    display: flex;
+    flex-direction: column;
+  }
+  .previewBar {
+    order: 0;
+  }
+  .sheetWrap {
+    order: 1;
+  }
+  .checks {
+    order: 2;
+  }
+  .toolsToggle {
+    order: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    margin-top: 16px;
+    padding: 0 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 600;
+    transition:
+      border-color var(--t-base) var(--e-out),
+      background var(--t-base) var(--e-out);
+  }
+  .toolsToggle[aria-expanded="true"] {
+    border-color: var(--accent);
+  }
+  .toolbar {
+    order: 4;
+  }
+
   .tabs {
     display: flex;
     position: sticky;
@@ -194,7 +243,7 @@
 .stepButton[aria-current="step"] .stepNumber {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-on);
   transform: scale(1.12);
 }
 .stepButton[data-done="true"] .stepNumber svg {
@@ -213,7 +262,7 @@
 .stepButton[data-done="true"] .stepNumber {
   background: var(--ink-soft);
   border-color: var(--ink-soft);
-  color: #fff;
+  color: var(--ink-on);
 }
 .stepCount {
   font-size: 13px;
@@ -623,9 +672,6 @@
     width var(--t-slow) var(--e-out),
     background var(--t-base) var(--e-out);
 }
-.fillBar[data-over="true"] {
-  background: var(--attention);
-}
 /* full-size preview only matters where the sheet is actually shrunk */
 .zoomButton {
   display: none;
@@ -669,13 +715,38 @@
 .check {
   composes: u-row-in from global;
   display: flex;
-  align-items: center;
+  /* Les points non validés tiennent sur deux lignes : l'icône doit rester
+     en haut, alignée sur la première, et non centrée sur l'ensemble. */
+  align-items: flex-start;
   gap: 10px;
   font-size: 14px;
   transition: color var(--t-base) var(--e-out);
 }
 .check svg {
   flex-shrink: 0;
+  margin-top: 1px;
+}
+.checkText {
+  min-width: 0;
+}
+.tipsTitle {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+/* Gris, jamais orange : la couleur d'alerte est réservée aux défauts. */
+.checkTip {
+  color: var(--muted);
+}
+.checkHow {
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  font-weight: 400;
 }
 .checkOk {
   color: var(--muted);
@@ -766,4 +837,98 @@
   background: var(--danger-soft);
   color: var(--danger);
   font-size: 14px;
+}
+
+/* ---- design controls ---- */
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.swatch {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--sw);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--border);
+  cursor: pointer;
+}
+.swatch:hover {
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+/* the ring, not a tick: a check mark on a dark swatch is unreadable and on a
+   light one it fights the colour the person is trying to judge */
+.swatch[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--ink);
+}
+.swatch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Le dialogue générique n'a pas de marge intérieure : la galerie gère la
+   sienne, celui-ci doit donc poser la sienne. */
+.gateBody {
+  padding: 24px;
+}
+
+/* Dialogue d'avertissement avant téléchargement. Il énumère ce qui manque
+   sans empêcher quoi que ce soit : le CV appartient à la personne. */
+.gateTitle {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.gateText {
+  color: var(--ink-soft);
+  margin-bottom: 12px;
+}
+.gateList {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  display: grid;
+  gap: 5px;
+  color: var(--danger);
+  font-weight: 600;
+}
+.gateAsk {
+  margin-bottom: 18px;
+}
+.gateActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/* L'action sûre d'abord, et sur un écran étroit elles passent l'une sous
+   l'autre plutôt que de se tasser côte à côte. */
+@media (max-width: 420px) {
+  .gateActions > * {
+    width: 100%;
+  }
+}
+
+/* Ces deux règles doivent venir APRÈS la définition de base de .toolbar :
+   une media query n'ajoute aucune spécificité, donc à spécificité égale
+   c'est la dernière écrite qui gagne. Placées plus haut dans le fichier,
+   elles étaient silencieusement écrasées et le panneau ne se repliait pas. */
+@media (max-width: 900px) {
+  .toolbar {
+    display: none;
+    margin-top: 10px;
+    margin-bottom: 0;
+  }
+  .toolbarOpen {
+    display: flex;
+  }
 }

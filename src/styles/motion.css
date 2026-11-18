@@ -107,3 +107,67 @@
     transform: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Scroll-driven reveals
+   ---------------------------------------------------------------------------
+   Built on `animation-timeline: view()`, so there is no observer, no scroll
+   listener and no JavaScript at all: the compositor drives it.
+
+   Everything sits inside @supports on purpose. A browser without scroll-driven
+   animations never applies the rule, so the element is simply visible — no
+   hidden content waiting for a script that will not run, which is the failure
+   mode of the IntersectionObserver pattern when JS is slow or blocked. On a
+   cheap Android over a weak connection, that difference is the whole page.
+
+   `both` holds the end state, so a section stays put once revealed. */
+/* Movement only, no fade. A scroll-driven animation is scrubbed, not
+   triggered: scrolling back up replays it in reverse, so anything that
+   animates opacity leaves real text sitting at a fraction of its contrast
+   whenever it is off screen. Audited at 1.21:1 before this was dropped.
+   Sliding alone reads just as well and can never be unreadable. */
+@keyframes uReveal {
+  from {
+    /* 22 px ne se voyait pas. Une révélation qu'on ne perçoit pas ne sert
+       à rien : autant ne pas l'animer du tout. */
+    transform: translate3d(0, 46px, 0) scale(0.975);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes uHeaderSettle {
+  from {
+    border-bottom-color: transparent;
+    box-shadow: 0 0 0 rgb(20 19 15 / 0%);
+  }
+  to {
+    border-bottom-color: var(--border);
+    box-shadow: 0 1px 14px rgb(20 19 15 / 7%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .u-reveal {
+      animation: uReveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 38%;
+    }
+    /* a shelf of cards reveals as one object, not twelve staggered ones:
+       staggering a grid makes the eye chase rather than read */
+    .u-reveal-group > * {
+      animation: uReveal linear both;
+      animation-timeline: view();
+      animation-range: entry 2% entry 40%;
+    }
+  }
+  @supports (animation-timeline: scroll()) {
+    .u-header-settle {
+      animation: uHeaderSettle linear both;
+      animation-timeline: scroll();
+      animation-range: 0 90px;
+    }
+  }
+}

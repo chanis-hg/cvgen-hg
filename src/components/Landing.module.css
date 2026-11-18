@@ -7,7 +7,7 @@
   top: -60px;
   padding: 10px 16px;
   background: var(--ink);
-  color: #fff;
+  color: var(--ink-on);
   border-radius: 8px;
   z-index: 50;
 }
@@ -17,6 +17,15 @@
 .skip:focus {
   top: 12px;
 }
+.sentinel {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+}
+
 .header {
   position: sticky;
   top: 0;
@@ -27,10 +36,40 @@
   gap: 12px;
   height: var(--header-h);
   padding: 0 max(16px, calc((100vw - 1120px) / 2));
-  background: rgb(247 246 243 / 88%);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    background var(--t-slow) var(--e-out),
+    border-color var(--t-slow) var(--e-out),
+    color var(--t-slow) var(--e-out);
 }
+
+/* Au-dessus du héros sombre, la barre n'a pas de fond : on redéfinit les
+   jetons sur ce sous-arbre et tout ce qu'il contient suit, sans une seule
+   règle par élément. */
+.header[data-stuck="false"] {
+  --ink: #eef0f8;
+  --ink-soft: #c2c8e2;
+  --muted: #959cbe;
+  --accent: #8c9bff;
+  --accent-ink: #a9b3ff;
+  --accent-on: #0b0f2e;
+  --border: #2b3360;
+  --border-strong: #3f4878;
+  --surface: #151b40;
+
+  color: #eef0f8;
+}
+
+/* Une fois le héros dépassé, elle reprend un fond plein : du texte sombre
+   sur une page qui défile dessous resterait illisible sans ça. */
+.header[data-stuck="true"] {
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  backdrop-filter: blur(12px) saturate(140%);
+  border-bottom-color: var(--border);
+  box-shadow: 0 1px 0 rgb(11 15 46 / 4%);
+}
+
 .logo {
   display: inline-flex;
   align-items: center;
@@ -73,7 +112,7 @@
   display: inline-flex;
   padding: 3px;
   border-radius: 999px;
-  background: #ece9e1;
+  background: var(--subtle);
 }
 .segmentButton {
   min-height: 40px;
@@ -97,6 +136,65 @@
   box-shadow: 0 1px 3px rgb(20 19 15 / 15%);
 }
 
+/* ------------------------------------------------------------------ *
+ * Le héros. Fond bleu nuit dans les deux thèmes : c'est ce qui donne
+ * une identité au site et fait ressortir la feuille blanche du CV, qui
+ * est le produit. Les jetons sont redéfinis localement, donc tout ce
+ * qui vit dedans s'adapte tout seul.
+ * ------------------------------------------------------------------ */
+.heroBand {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--bg-deep);
+  padding-top: var(--header-h);
+  margin-top: calc(-1 * var(--header-h));
+
+  --ink: #eef0f8;
+  --ink-soft: #c2c8e2;
+  --muted: #959cbe;
+  --accent: #8c9bff;
+  --accent-ink: #a9b3ff;
+  --accent-soft: #1b2250;
+  --accent-on: #0b0f2e;
+  --border: #2b3360;
+  --border-strong: #3f4878;
+  --surface: #151b40;
+
+  /* Indispensable : un titre qui ne fixe pas sa propre couleur hérite
+     celle calculée sur body, c'est-à-dire l'encre du thème et non celle
+     redéfinie ici. Sans cette ligne, le titre du héros est bleu nuit sur
+     bleu nuit. */
+  color: var(--ink);
+}
+
+/* Une nappe de lumière derrière la feuille, pour que le bleu nuit ne soit
+   pas un aplat mort. Purement décorative, donc hors du flux et masquée aux
+   lecteurs d'écran. */
+.glow {
+  position: absolute;
+  z-index: -1;
+  top: -22%;
+  right: -10%;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgb(75 92 255 / 42%) 0%,
+    rgb(75 92 255 / 16%) 42%,
+    transparent 68%
+  );
+  pointer-events: none;
+}
+@media (max-width: 760px) {
+  .glow {
+    top: -6%;
+    right: -36%;
+    width: 150%;
+  }
+}
+
 .hero,
 .section {
   max-width: 1120px;
@@ -105,7 +203,10 @@
 }
 .hero {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  /* both tracks need the explicit 0 minimum: the sheet inside the right
+     column is 794px wide before its transform, and without it that becomes
+     the column's min-content width and crushes the headline */
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   gap: 48px;
   align-items: center;
   padding-top: 64px;
@@ -145,67 +246,13 @@
   composes: u-enter from global;
   min-width: 0;
 }
+.heroSheetCrop {
+  min-width: 0;
+}
 .sampleWrap {
   composes: u-enter from global;
   position: relative;
   animation-delay: 90ms;
-}
-.sample {
-  padding: 28px;
-  transition: transform var(--t-slow) var(--e-out);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  transform: rotate(1.5deg);
-}
-.sampleWrap:hover .sample {
-  transform: rotate(0deg);
-}
-.sampleHead {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding-bottom: 14px;
-  border-bottom: 1.5px solid var(--ink);
-}
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  font-family: var(--font-display);
-  font-weight: 600;
-}
-.sampleName {
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.1;
-}
-.sampleRole {
-  color: var(--doc-accent);
-  font-weight: 500;
-}
-.sampleMuted {
-  font-size: 13px;
-  color: var(--muted);
-}
-.sampleTitle {
-  margin-top: 16px;
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.sampleText {
-  margin-top: 4px;
-  font-size: 14px;
 }
 .sampleCheck {
   display: flex;
@@ -276,37 +323,8 @@
   height: 36px;
   border-radius: 50%;
   background: var(--ink);
-  color: #fff;
+  color: var(--ink-on);
   font-weight: 600;
-}
-.cards {
-  list-style: none;
-  margin: 28px 0 24px;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-.modelCard {
-  transition:
-    border-color var(--t-base) var(--e-out),
-    box-shadow var(--t-base) var(--e-out),
-    transform var(--t-base) var(--e-out);
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 20px;
-  align-items: center;
-  padding: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-}
-.modelCard:hover {
-  transform: translate3d(0, -2px, 0);
-  box-shadow: var(--shadow);
-}
-.thumbBox {
-  width: 120px;
 }
 .modes {
   list-style: none;
@@ -398,7 +416,7 @@
   gap: 14px;
   text-align: center;
   background: var(--ink);
-  color: #fff;
+  color: var(--ink-on);
   border-radius: var(--radius-lg);
 }
 .ctaTitle {
@@ -427,13 +445,265 @@
   .modes {
     grid-template-columns: 1fr;
   }
-  .sample {
+}
+
+/* ---------- navigation ---------- */
+.headerNav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: auto;
+  margin-left: 18px;
+}
+.navLink {
+  padding: 10px 12px;
+  min-height: 44px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.navLink:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+@media (max-width: 560px) {
+  .headerNav {
+    display: none;
+  }
+}
+
+/* ---------- bands ----------
+   Twelve identical white cards on one cream ground gave the page no pulse:
+   a FAQ row read as heavy as a core feature. Alternating the ground is what
+   separates one movement from the next, so the cards inside can be lighter. */
+.bandWhite {
+  background: var(--surface);
+  border-block: 1px solid var(--border);
+}
+.bandSoft {
+  background: var(--accent-soft);
+}
+.sectionNarrow {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 72px 16px;
+}
+
+/* ---------- hero ---------- */
+.heroSheet {
+  /* the top two thirds of a page: enough to read the shape and the wording,
+     without a column of white space setting the height of the whole hero */
+  max-width: 420px;
+  max-height: 460px;
+  margin-inline: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgb(20 19 15 / 10%);
+  background: #fff;
+  mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+}
+
+/* ---------- template shelf ---------- */
+.shelf {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (min-width: 760px) {
+  .shelf {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.shelfItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.thumbBox {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #fff;
+}
+.shelfName {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---------- footer ---------- */
+.footer {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 16px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.footerTop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.footerBrand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+}
+.footerLine {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.footerLang {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.footerLabel {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.footerBottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--muted);
+}
+.footerBottom p {
+  margin: 0;
+}
+
+/* ---------- scroll-driven motion ----------
+   `composes` needs a plain class selector, so these sit on their own rather
+   than joining the grouped layout rules above. */
+.section {
+  composes: u-reveal from global;
+}
+.sectionNarrow {
+  composes: u-reveal from global;
+}
+.steps {
+  composes: u-reveal-group from global;
+}
+.shelf {
+  composes: u-reveal-group from global;
+}
+.modes {
+  composes: u-reveal-group from global;
+}
+.faq {
+  composes: u-reveal-group from global;
+}
+.finalCta {
+  composes: u-reveal from global;
+}
+.header {
+  composes: u-header-settle from global;
+}
+
+/* ------------------------------------------------------------------ *
+ * Entrée du héros. Les éléments montent en cascade, d'abord le label,
+ * puis le titre, le texte, les boutons, et la feuille en dernier. Elle
+ * ne joue qu'une fois, au chargement.
+ * ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: no-preference) {
+  .heroBand .eyebrowPill,
+  .heroBand .heroTitle,
+  .heroBand .lead,
+  .heroBand .heroActions {
+    animation: heroRise 620ms var(--e-out) both;
+  }
+  .heroBand .heroTitle {
+    animation-delay: 80ms;
+  }
+  .heroBand .lead {
+    animation-delay: 170ms;
+  }
+  .heroBand .heroActions {
+    animation-delay: 250ms;
+  }
+  .heroBand .sampleWrap {
+    animation: sheetIn 900ms var(--e-out) both;
+    animation-delay: 160ms;
+  }
+  .glow {
+    animation: glowIn 1400ms var(--e-out) both;
+  }
+}
+
+@keyframes heroRise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0);
+  }
+  to {
+    opacity: 1;
     transform: none;
   }
-  .modelCard {
-    grid-template-columns: 90px 1fr;
+}
+
+/* La feuille arrive de plus loin et se redresse : elle est le produit, donc
+   c'est elle qui mérite le mouvement le plus ample. */
+@keyframes sheetIn {
+  from {
+    opacity: 0;
+    transform: translate3d(28px, 38px, 0) rotate(2.4deg) scale(0.95);
   }
-  .thumbBox {
-    width: 90px;
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes glowIn {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Les cartes se soulèvent au survol : la page répond au curseur au lieu
+   d'être une image fixe. */
+@media (prefers-reduced-motion: no-preference) {
+  .shelfItem,
+  .step,
+  .mode {
+    transition:
+      transform var(--t-base) var(--e-out),
+      box-shadow var(--t-base) var(--e-out),
+      border-color var(--t-base) var(--e-out);
+  }
+  .shelfItem:hover,
+  .step:hover,
+  .mode:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lift);
+    border-color: var(--border-strong);
   }
 }

@@ -1,11 +1,15 @@
+/* La feuille ne suit pas le thème. Un CV finit sur du papier blanc, et
+   quelqu'un qui le relit en mode sombre doit voir ce qui sortira vraiment
+   de l'imprimante, pas une version inversée. */
 .sheet {
+  color-scheme: light;
   width: 210mm;
   min-height: 297mm;
   padding: 14mm 16mm;
   background: #fff;
   color: var(--doc-ink);
   font-family: var(--font-body);
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--doc-scale, 1));
   line-height: 1.45;
   box-sizing: border-box;
   -webkit-print-color-adjust: exact;
@@ -27,14 +31,14 @@
 .name {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 27pt;
+  font-size: calc(27pt * var(--doc-scale, 1));
   line-height: 1.05;
   letter-spacing: -0.015em;
   margin: 0;
 }
 .jobTitle {
   margin-top: 6px;
-  font-size: 13pt;
+  font-size: calc(13pt * var(--doc-scale, 1));
   font-weight: 500;
   color: var(--doc-accent);
 }
@@ -42,7 +46,7 @@
 .links,
 .civil {
   margin-top: 6px;
-  font-size: 9.5pt;
+  font-size: calc(9.5pt * var(--doc-scale, 1));
   color: var(--doc-soft);
 }
 .links {
@@ -72,8 +76,11 @@
   object-fit: cover;
   margin-bottom: 14px;
 }
+/* Le texte fictif de l'aperçu vide était à 2,14:1 sur blanc : illisible
+   pour une vue basse. Un gris chaud à 4,78:1 reste visiblement « à
+   remplir » sans devenir inaccessible. Il disparaît à l'impression. */
 .placeholder {
-  color: #b5b1a6;
+  color: #787264;
 }
 
 @media print {
@@ -90,13 +97,15 @@
    recognising the standard section names. */
 .sectionTitle {
   font-family: var(--font-display);
-  font-size: 9.5pt;
+  font-size: calc(9.5pt * var(--doc-scale, 1));
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--doc-ink);
+  /* the accent carries the structure of the page, as it does on a well-made
+     CV: the heading, its rule and the dates — never the body text */
+  color: var(--doc-accent);
   padding-bottom: 4px;
-  border-bottom: 1px solid var(--doc-rule);
+  border-bottom: 1.4px solid var(--doc-accent);
   margin-bottom: 8px;
   break-after: avoid;
 }
@@ -122,14 +131,14 @@
 }
 .entryTitle {
   font-family: var(--font-body);
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--doc-scale, 1));
   font-weight: 650;
   letter-spacing: 0;
   line-height: 1.3;
 }
 .dates {
-  font-size: 9.5pt;
-  color: var(--doc-muted);
+  font-size: calc(9.5pt * var(--doc-scale, 1));
+  color: var(--doc-accent);
   white-space: nowrap;
   text-decoration: none;
 }
@@ -139,51 +148,130 @@
   color: var(--doc-accent);
 }
 .org {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--doc-scale, 1));
   color: var(--doc-soft);
 }
 .text {
   margin-top: 2px;
-  font-size: 10.3pt;
+  font-size: calc(10.3pt * var(--doc-scale, 1));
 }
 .bullets {
   margin: 3px 0 0;
   padding-left: 16px;
-  font-size: 10.3pt;
+  font-size: calc(10.3pt * var(--doc-scale, 1));
 }
 .bullets li {
   margin-bottom: 1px;
 }
 .references {
   margin-top: 18px;
-  font-size: 9.5pt;
+  font-size: calc(9.5pt * var(--doc-scale, 1));
   color: var(--doc-muted);
   font-style: italic;
 }
 
-.two {
+/* ------------------------------------------------------------------ *
+ * Dispositions. Chacune est une géométrie de page à part entière, pas
+ * un réordonnancement de rubriques : colonne latérale claire, colonne
+ * sombre pleine, colonne à droite, bandeau de titre, rail chronologique.
+ * ------------------------------------------------------------------ */
+
+/* -- deux colonnes -- */
+.col_two {
   display: grid;
-  grid-template-columns: 62mm 1fr;
-  gap: 8mm;
-  align-items: start;
+  gap: 0;
+  padding: 0;
+  align-items: stretch;
 }
-.aside {
-  background: #f7f6f3;
-  border-radius: 10px;
-  padding: 10mm 6mm;
-  min-height: 250mm;
+.side_left {
+  grid-template-columns: 64mm 1fr;
+  grid-template-areas: "side main";
 }
-.aside .section:first-of-type {
-  margin-top: 0;
+.side_right {
+  grid-template-columns: 1fr 64mm;
+  grid-template-areas: "main side";
 }
-.aside .sectionTitle {
-  border-bottom-color: var(--doc-rule);
+/* Le corps est émis avant la colonne latérale dans le DOM et replacé ici.
+   Un système de suivi lit le flux : le texte extrait commence donc par le
+   nom, pas par une liste de contacts détachée de tout. */
+.col_two .mainCol {
+  grid-area: main;
+  min-width: 0;
+  padding: 14mm 14mm 14mm 12mm;
 }
+.side_right .mainCol {
+  padding: 14mm 12mm 14mm 14mm;
+}
+.col_two .aside {
+  grid-area: side;
+  /* Le premier titre de la colonne tombait à la même hauteur que le nom,
+     en gros caractères juste à côté : la colonne paraissait collée au bord
+     et déséquilibrait la page. Elle démarre maintenant à hauteur de la
+     première rubrique du corps. La valeur suit la densité, sinon
+     l'alignement se perd dès qu'on change la taille du texte. */
+  padding: calc(30mm * var(--doc-scale, 1)) 9mm 14mm;
+  border-radius: 0;
+  min-height: 0;
+}
+/* Avec une photo, c'est elle qui occupe le haut : le grand retrait n'a
+   plus lieu d'être. */
+.col_two .aside:has(.photoLarge) {
+  padding-top: calc(13mm * var(--doc-scale, 1));
+}
+
+.tone_light .aside {
+  /* un lavis de la couleur choisie plutôt qu'un gris fixe, pour que la
+     colonne appartienne au même document que les titres. À 8 % elle ne se
+     voyait pas : il faut assez de matière pour que l'œil lise une colonne,
+     pas une marge un peu sale. */
+  background: color-mix(in srgb, var(--doc-accent) 13%, #ffffff);
+}
+/* Un filet sur l'arête intérieure : si le navigateur refuse d'imprimer les
+   fonds, la colonne reste délimitée au lieu de disparaître. */
+.side_left.tone_light .aside {
+  border-right: 1px solid color-mix(in srgb, var(--doc-accent) 30%, transparent);
+}
+.side_right.tone_light .aside {
+  border-left: 1px solid color-mix(in srgb, var(--doc-accent) 30%, transparent);
+}
+.tone_light .aside .sectionTitle {
+  border-bottom-color: color-mix(in srgb, var(--doc-accent) 35%, transparent);
+}
+
+/* -- colonne sombre -- */
+/* Le blanc sur chacune des huit teintes dépasse 5,4:1, donc le contraste
+   tient quelle que soit la couleur retenue. */
+.tone_dark .aside {
+  background: var(--doc-accent);
+  color: #fff;
+}
+.tone_dark .aside .sectionTitle {
+  color: #fff;
+  border-bottom-color: rgba(255, 255, 255, 0.5);
+}
+.tone_dark .aside .link,
+.tone_dark .aside .entryTitle {
+  color: #fff;
+}
+/* La couleur seule ne doit pas porter l'information « cliquable » : dans la
+   colonne sombre tout est blanc, donc le lien prend un soulignement. */
+.tone_dark .aside .link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.tone_dark .aside .text,
+.tone_dark .aside .org,
+.tone_dark .aside .civil,
+.tone_dark .aside .certMeta,
+.tone_dark .aside .dates {
+  color: rgba(255, 255, 255, 0.86);
+}
+
 .contactList {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: 9.5pt;
+  font-size: calc(9.5pt * var(--doc-scale, 1));
   overflow-wrap: anywhere;
 }
 .contactList li {
@@ -193,8 +281,83 @@
   padding-bottom: 10px;
   border-bottom: 1.5px solid var(--doc-ink);
 }
+.tone_dark .headerTwo {
+  border-bottom-color: var(--doc-accent);
+}
 .mainCol {
   min-width: 0;
+}
+
+/* -- bandeau de titre -- */
+.head_band {
+  padding: 0;
+}
+.head_band .header {
+  background: var(--doc-accent);
+  color: #fff;
+  padding: 13mm 16mm;
+  margin-bottom: 0;
+  border-bottom: none;
+  align-items: center;
+}
+.head_band .name,
+.head_band .jobTitle {
+  color: #fff;
+}
+.head_band .contact,
+.head_band .links,
+.head_band .civil {
+  color: rgba(255, 255, 255, 0.88);
+}
+.head_band .link {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.head_band .body {
+  padding: 2mm 16mm 14mm;
+}
+
+/* -- titre centré -- */
+.head_center .header {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.head_center .links,
+.head_center .contact {
+  justify-content: center;
+  text-align: center;
+}
+
+/* -- rail chronologique -- */
+/* Le rail est un filet et une bague, pas un aplat : les bordures
+   s'impriment même quand le navigateur refuse les fonds. */
+/* Le filet appartient à l'entrée, donc une marge entre deux entrées le
+   coupait : on lisait des tirets détachés, pas une chronologie. L'espace
+   passe à l'intérieur, les filets se touchent, la ligne devient continue. */
+.rail .entry {
+  position: relative;
+  padding-left: 14px;
+  padding-bottom: 9px;
+  margin-bottom: 0;
+  border-left: 1.5px solid color-mix(in srgb, var(--doc-accent) 38%, transparent);
+}
+.rail .entry:last-child {
+  padding-bottom: 2px;
+  border-left-color: transparent;
+}
+.rail .entry::before {
+  content: "";
+  position: absolute;
+  left: -4.75px;
+  top: calc(5px * var(--doc-scale, 1));
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2.2px solid var(--doc-accent);
+  background: #fff;
 }
 
 @media print {
@@ -206,4 +369,120 @@
   .aside {
     min-height: 0;
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * Style des titres. À disposition égale, c'est ce qui change le plus
+ * la personnalité de la page.
+ * ------------------------------------------------------------------ */
+
+/* pastille : le titre dans une puce arrondie teintée */
+.title_pastille .sectionTitle {
+  display: inline-block;
+  padding: 4px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--doc-accent) 13%, #ffffff);
+  margin-bottom: 9px;
+}
+.title_pastille .dates {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--doc-accent) 10%, #ffffff);
+}
+.title_pastille.tone_dark .aside .sectionTitle {
+  background: rgb(255 255 255 / 18%);
+}
+.title_pastille.tone_dark .aside .dates {
+  background: rgb(255 255 255 / 14%);
+}
+
+/* barre : un filet vertical devant le titre, rien dessous */
+.title_barre .sectionTitle {
+  border-bottom: 0;
+  border-left: 3px solid var(--doc-accent);
+  padding: 1px 0 1px 9px;
+  margin-bottom: 8px;
+}
+.title_barre.tone_dark .aside .sectionTitle {
+  border-left-color: rgb(255 255 255 / 70%);
+}
+
+/* nu : le titre seul, l'espace fait la séparation */
+.title_nu .sectionTitle {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 6px;
+}
+.title_nu .section {
+  margin-top: 17px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Compétences en puces arrondies.
+ * ------------------------------------------------------------------ */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 6px;
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+}
+.chip {
+  padding: 2.5px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--doc-accent) 32%, transparent);
+  background: color-mix(in srgb, var(--doc-accent) 7%, #ffffff);
+  font-size: calc(9.7pt * var(--doc-scale, 1));
+  line-height: 1.35;
+}
+/* Dans la colonne sombre, la bordure porte la puce : un fond clair y
+   ferait des pavés qui écrasent le reste. */
+.tone_dark .aside .chip {
+  border-color: rgb(255 255 255 / 55%);
+  background: transparent;
+  color: #fff;
+}
+
+/* ------------------------------------------------------------------ *
+ * Bandeau avec photo.
+ * ------------------------------------------------------------------ */
+.head_bandPhoto {
+  padding: 0;
+}
+.head_bandPhoto .header {
+  align-items: center;
+  gap: 8mm;
+  padding: 11mm 16mm;
+  margin-bottom: 0;
+  border-bottom: none;
+  background: var(--doc-accent);
+  color: #fff;
+}
+.head_bandPhoto .name,
+.head_bandPhoto .jobTitle {
+  color: #fff;
+}
+.head_bandPhoto .contact,
+.head_bandPhoto .links,
+.head_bandPhoto .civil {
+  color: rgb(255 255 255 / 88%);
+}
+.head_bandPhoto .link {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.head_bandPhoto .body {
+  padding: 2mm 16mm 14mm;
+}
+.photoBand {
+  width: 32mm;
+  height: 32mm;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2.5px solid rgb(255 255 255 / 85%);
 }

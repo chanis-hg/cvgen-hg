@@ -24,14 +24,14 @@
 }
 .primary {
   background: var(--ink);
-  color: #fff;
+  color: var(--ink-on);
 }
 .primary:hover {
   background: #2c2a24;
 }
 .accent {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-on);
 }
 .accent:hover {
   background: var(--accent-ink);
@@ -44,12 +44,21 @@
 .secondary:hover {
   border-color: var(--ink);
 }
+.danger {
+  background: var(--danger);
+  color: var(--danger-on);
+  border-color: var(--danger);
+}
+.danger:hover {
+  background: #96170f;
+  border-color: #96170f;
+}
 .ghost {
   background: transparent;
   color: var(--ink);
 }
 .ghost:hover {
-  background: rgb(20 19 15 / 6%);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 .small {
   min-height: 36px;
@@ -170,4 +179,26 @@ textarea.control {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+.modal {
+  width: min(96vw, 900px);
+  max-height: 92vh;
+  padding: 0;
+  /* --line n'existe pas dans les jetons : la bordure ne s'affichait donc
+     pas du tout. */
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+/* Une largeur de 900 px pour quatre lignes de texte laisse un grand vide à
+   droite : un dialogue doit faire la taille de ce qu'il dit. */
+.modalSmall {
+  width: min(94vw, 540px);
+}
+.modal::backdrop {
+  background: rgb(4 6 20 / 62%);
 }

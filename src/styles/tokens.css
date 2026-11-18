@@ -1,32 +1,45 @@
 /**
- * Colour roles.
+ * Deux thèmes sur une seule palette : « Bleu profond ».
  *
- * The accent used to do seven jobs at once — brand, primary action, link,
- * CV section heading, eyebrow label, focus ring, chip — and a colour that
- * means everything means nothing. It now means one thing in the interface:
- * this is what you act on.
+ * #0b0f2e est le sol, #4b5cff l'action, #8c9bff l'accent clair qui prend le
+ * relais sur fond sombre, #f6f7fb la surface pâle. Un seul rôle par jeton :
+ * l'accent veut dire « c'est là qu'on agit », rien d'autre.
  *
- * The document has its own, quieter set below. A CV is scanned in a few
- * seconds and is often printed in black and white, so it carries one accent
- * (the target job and the links) and lets near-black plus a hairline rule do
- * the structural work.
+ * Ce qui ne bascule JAMAIS : la feuille de CV. Un CV finit imprimé sur du
+ * papier blanc, et une personne qui relit son CV en mode sombre doit voir
+ * exactement ce qui sortira de l'imprimante. Les jetons --doc-* restent donc
+ * identiques dans les deux thèmes, et la feuille garde son fond blanc.
  */
 
 :root {
-  --bg: #f7f6f3;
+  color-scheme: light;
+
+  --bg: #f6f7fb;
+  --bg-deep: #0b0f2e;
   --surface: #ffffff;
-  --ink: #14130f;
-  --ink-soft: #3d3a33;
-  --muted: #6b6860;
-  --border: #e6e3dc;
-  --border-strong: #cfcbc0;
+  --surface-raised: #ffffff;
+  --ink: #0b0f2e;
+  --ink-soft: #2b3156;
+  --muted: #5c6385;
+  --border: #e2e5f0;
+  --border-strong: #c3c8dd;
 
-  /* interface accent: actions and focus, nothing else */
-  --accent: #3b4bff;
-  --accent-ink: #2433d6;
-  --accent-soft: #eceeff;
+  /* accent d'interface : les actions et le focus, rien d'autre */
+  --accent: #4b5cff;
+  --accent-ink: #3545e8;
+  --accent-soft: #eaecff;
+  --accent-on: #ffffff;
 
-  /* one alert tone. "Done" is quiet, "left to do" is the one that shows. */
+  /* texte posé sur un aplat d'encre, et surface creuse (rails de segments,
+     étiquettes). Sans ces deux-là, « fond encre + texte blanc » s'inverse
+     en thème sombre et devient blanc sur blanc. */
+  --ink-on: #ffffff;
+  --subtle: #e8eaf4;
+
+  /* sur fond sombre, l'accent vif devient illisible : c'est celui-ci qui prend le relais */
+  --accent-light: #8c9bff;
+
+  /* une seule tonalité d'alerte. « Fait » est discret, « reste à faire » se voit. */
   --attention: #8a4b00;
   --attention-soft: #fdf1df;
   --attention-border: #f1d7ae;
@@ -34,8 +47,9 @@
   --danger: #b42318;
   --danger-soft: #fdecea;
   --danger-border: #f5c6c1;
+  --danger-on: #ffffff;
 
-  /* document: printed and scanned, so deeper and calmer than the interface */
+  /* document : imprimé puis parcouru en quelques secondes, donc plus calme que l'interface */
   --doc-ink: #14130f;
   --doc-soft: #4a4841;
   --doc-muted: #6b6860;
@@ -44,8 +58,81 @@
 
   --radius: 12px;
   --radius-lg: 16px;
-  --shadow: 0 1px 2px rgb(20 19 15 / 6%), 0 8px 24px rgb(20 19 15 / 6%);
+  --shadow: 0 1px 2px rgb(11 15 46 / 6%), 0 8px 24px rgb(11 15 46 / 8%);
+  --shadow-lift: 0 2px 6px rgb(11 15 46 / 8%), 0 18px 44px rgb(11 15 46 / 14%);
   --font-display: "Wura mi by GemmaS", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Google Sans Flex Variable", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
   --header-h: 60px;
+
+  /* durées et courbes, pour que tout le site bouge de la même façon */
+  --t-fast: 120ms;
+  --t-base: 220ms;
+  --t-slow: 420ms;
+  --e-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0b0f2e;
+  --bg-deep: #070a1f;
+  --surface: #151b40;
+  --surface-raised: #1b224d;
+  --ink: #eef0f8;
+  --ink-soft: #c2c8e2;
+  --muted: #959cbe;
+  --border: #262d57;
+  --border-strong: #3a4273;
+
+  --accent: #8c9bff;
+  --accent-ink: #a9b3ff;
+  --accent-soft: #1b2250;
+  --accent-on: #0b0f2e;
+  --ink-on: #0b0f2e;
+  --subtle: #1b224d;
+
+  --attention: #f0b86b;
+  --attention-soft: #2e2415;
+  --attention-border: #4a3a1d;
+
+  --danger: #ff9b91;
+  --danger-soft: #35191a;
+  --danger-border: #5a2824;
+  --danger-on: #2a0f0d;
+
+  /* les ombres ne se voient pas sur du bleu nuit : c'est la lumière qui sépare les plans */
+  --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 30%);
+  --shadow-lift: 0 2px 8px rgb(0 0 0 / 45%), 0 20px 48px rgb(0 0 0 / 40%);
+}
+
+/* Sans choix explicite, on suit le réglage du système. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: #0b0f2e;
+    --bg-deep: #070a1f;
+    --surface: #151b40;
+    --surface-raised: #1b224d;
+    --ink: #eef0f8;
+    --ink-soft: #c2c8e2;
+    --muted: #959cbe;
+    --border: #262d57;
+    --border-strong: #3a4273;
+    --accent: #8c9bff;
+    --accent-ink: #a9b3ff;
+    --accent-soft: #1b2250;
+    --accent-on: #0b0f2e;
+    --ink-on: #0b0f2e;
+    --subtle: #1b224d;
+    --attention: #f0b86b;
+    --attention-soft: #2e2415;
+    --attention-border: #4a3a1d;
+    --danger: #ff9b91;
+    --danger-soft: #35191a;
+    --danger-border: #5a2824;
+    --danger-on: #2a0f0d;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 30%);
+    --shadow-lift: 0 2px 8px rgb(0 0 0 / 45%), 0 20px 48px rgb(0 0 0 / 40%);
+  }
 }

@@ -1,5 +1,46 @@
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import styles from "./ui.module.css";
+
+/**
+ * A modal built on the native <dialog>.
+ *
+ * showModal() gives the focus trap, the Escape key, the top layer and the
+ * return of focus to whatever opened it — all things a hand-rolled overlay
+ * gets wrong. jsdom does not implement it, so the fallback below keeps the
+ * tests meaningful: the content is in the document either way.
+ */
+export function Modal({ open, onClose, label, size, children }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (open) {
+      if (typeof el.showModal === "function") {
+        if (!el.open) el.showModal();
+      } else {
+        el.setAttribute("open", "");
+      }
+    } else if (typeof el.close === "function") {
+      if (el.open) el.close();
+    } else {
+      el.removeAttribute("open");
+    }
+  }, [open]);
+
+  if (!open) return null;
+  return (
+    <dialog
+      ref={ref}
+      className={`${styles.modal} ${size === "small" ? styles.modalSmall : ""}`}
+      aria-label={label}
+      onCancel={onClose}
+      onClose={onClose}
+    >
+      {children}
+    </dialog>
+  );
+}
 
 export function Button({ variant = "primary", size, icon: _icon, className = "", children, ...rest }) {
   const classes = [styles.btn, styles[variant], size ? styles[size] : "", className]

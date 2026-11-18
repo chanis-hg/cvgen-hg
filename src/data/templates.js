@@ -1,40 +1,51 @@
+// Un modèle décide de l'ordre des rubriques, du vocabulaire des titres et
+// de la disposition par laquelle il se présente. La disposition reste un
+// réglage libre : le modèle n'en donne que le point de départ. C'est ce qui
+// évite cinq modèles qui se ressemblent parce qu'ils partageaient tous la
+// même colonne unique.
 export const TEMPLATES = {
   stage: {
     id: "stage",
-    layout: "single",
+    defaultLayout: "colonneGauche",
     situations: ["student"],
     sections: ["summary", "education", "certifications", "projects", "experience", "skills", "languages"],
-    atsSafe: true,
   },
   chrono: {
     id: "chrono",
-    layout: "single",
+    defaultLayout: "classique",
     situations: ["experienced"],
     sections: ["summary", "experience", "education", "certifications", "skills", "languages"],
-    atsSafe: true,
   },
   hybride: {
     id: "hybride",
-    layout: "single",
+    defaultLayout: "bandeau",
     situations: ["change"],
     sections: ["skills", "summary", "experience", "education", "certifications", "languages"],
-    atsSafe: true,
   },
   dev: {
     id: "dev",
-    layout: "single",
+    defaultLayout: "chronologie",
     situations: ["dev", "student"],
     sections: ["summary", "skills", "projects", "experience", "education", "certifications", "languages"],
-    atsSafe: true,
     showLinksFirst: true,
   },
   vitrine: {
     id: "vitrine",
-    layout: "two",
+    defaultLayout: "colonneSombre",
     situations: ["creative"],
-    aside: ["skills", "languages"],
-    main: ["summary", "experience", "education", "certifications", "projects"],
-    atsSafe: false,
+    sections: ["summary", "experience", "projects", "education", "certifications", "skills", "languages"],
+  },
+  sobre: {
+    id: "sobre",
+    defaultLayout: "centre",
+    situations: ["experienced", "change"],
+    sections: ["summary", "experience", "education", "certifications", "skills", "languages"],
+  },
+  atelier: {
+    id: "atelier",
+    defaultLayout: "colonneDroite",
+    situations: ["creative", "dev"],
+    sections: ["summary", "projects", "experience", "education", "certifications", "skills", "languages"],
   },
 };
 

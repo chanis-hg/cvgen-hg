@@ -1,6 +1,8 @@
 import { CV_LABELS } from "../i18n/cv";
 import { getTemplate } from "../data/templates";
+import { getLayout, splitSections } from "../data/layouts";
 import { displayUrl, mailHref, telHref, toHref } from "../lib/validate";
+import { ACCENTS, DENSITIES } from "../data/model";
 import styles from "./CVSheet.module.css";
 
 function dates(item, labels) {
@@ -54,7 +56,7 @@ function ContactBit({ item }) {
   );
 }
 
-function renderSection(name, { data, labels, template }) {
+function renderSection(name, { data, labels, template, skillStyle }) {
   switch (name) {
     case "summary":
       if (!data.summary.trim()) return null;
@@ -73,7 +75,26 @@ function renderSection(name, { data, labels, template }) {
             : labels.skills;
       return (
         <Section key={name} title={title}>
-          <p className={styles.text}>{data.skills.map((s) => s.name).join(" · ")}</p>
+          {skillStyle === "pastilles" ? (
+            // Les puces arrondies se repèrent plus vite qu'une ligne
+            // continue. Le texte extrait reste le même : ce sont des
+            // éléments de liste, pas une image.
+            <ul className={styles.chips}>
+              {data.skills.map((sk) => (
+                <li key={sk.id ?? sk.name} className={styles.chip}>
+                  {sk.name}
+                </li>
+              ))}
+            </ul>
+          ) : skillStyle === "puces" ? (
+            <ul className={styles.bullets}>
+              {data.skills.map((sk) => (
+                <li key={sk.id ?? sk.name}>{sk.name}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.text}>{data.skills.map((sk) => sk.name).join(" · ")}</p>
+          )}
         </Section>
       );
     }
@@ -179,8 +200,27 @@ function civilLine(data, labels) {
   return parts.join(" · ");
 }
 
-export default function CVSheet({ data, templateId, region, cvLang, id }) {
+export default function CVSheet({
+  data,
+  templateId,
+  region,
+  cvLang,
+  accent = "navy",
+  density = "normal",
+  layout: layoutId = "classique",
+  titleStyle = "filet",
+  skillStyle = "ligne",
+  id,
+}) {
   const template = getTemplate(templateId);
+  const layout = getLayout(layoutId);
+  // One custom property drives every coloured part of the sheet, so the
+  // person's choice reaches the section rules, the dates and the links
+  // without a class per colour.
+  const tone = {
+    "--doc-accent": ACCENTS[accent] ?? ACCENTS.navy,
+    "--doc-scale": DENSITIES[density] ?? 1,
+  };
   const labels = CV_LABELS[cvLang] || CV_LABELS.fr;
   const showBenin = region === "benin";
   const name = `${data.firstName.trim()} ${data.lastName.trim()}`.trim();
@@ -191,7 +231,12 @@ export default function CVSheet({ data, templateId, region, cvLang, id }) {
   ].filter((c) => c.text);
   const links = ["linkedin", "github", "website"].filter((k) => data[k].trim());
   const civil = showBenin ? civilLine(data, labels) : "";
-  const ctx = { data, labels, template };
+  const ctx = { data, labels, template, skillStyle };
+
+  // A template owns the order of its sections; a layout only decides where
+  // that order is poured. Both single- and two-column layouts read from the
+  // same list, so every template works under every layout.
+  const { aside: asideSections, main: mainSections } = splitSections(template.sections, layout);
 
   const linkRow = links.length > 0 && (
     <p className={styles.links}>
@@ -212,9 +257,53 @@ export default function CVSheet({ data, templateId, region, cvLang, id }) {
     </>
   );
 
-  if (template.layout === "two") {
+  const contactRow = contact.length > 0 && (
+    <p className={styles.contact}>
+      {contact.map((c, i) => (
+        <span key={c.text}>
+          {i > 0 && " · "}
+          <ContactBit item={c} />
+        </span>
+      ))}
+    </p>
+  );
+
+  const sheetClass = [
+    styles.sheet,
+    styles[`col_${layout.col}`],
+    styles[`head_${layout.header}`],
+    layout.side ? styles[`side_${layout.side}`] : "",
+    layout.tone ? styles[`tone_${layout.tone}`] : "",
+    layout.rail ? styles.rail : "",
+    styles[`title_${titleStyle}`],
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const sheetProps = {
+    id,
+    className: sheetClass,
+    style: tone,
+    "data-cv-sheet": true,
+    "data-template": template.id,
+    "data-layout": layout.id,
+  };
+
+  // ---- two columns ---------------------------------------------------------
+  // The body comes first in the DOM and the side column is placed by grid
+  // area. A tracking system reads the flow, so the extracted text opens on
+  // the name instead of a loose list of contact details.
+  if (layout.col === "two" && asideSections.length) {
     return (
-      <div id={id} className={`${styles.sheet} ${styles.two}`} data-cv-sheet data-template={template.id}>
+      <div {...sheetProps}>
+        <div className={styles.mainCol}>
+          <header className={styles.headerTwo}>
+            {identity}
+            {layout.tone === "dark" ? null : contactRow}
+          </header>
+          {mainSections.map((s) => renderSection(s, ctx))}
+          {showBenin && <p className={styles.references}>{labels.references}</p>}
+        </div>
         <aside className={styles.aside}>
           {showBenin && data.photo && <img src={data.photo} alt="" className={styles.photoLarge} />}
           <section className={styles.section}>
@@ -233,40 +322,34 @@ export default function CVSheet({ data, templateId, region, cvLang, id }) {
             </ul>
             {civil && <p className={styles.civil}>{civil}</p>}
           </section>
-          {template.aside.map((s) => renderSection(s, ctx))}
+          {asideSections.map((s) => renderSection(s, ctx))}
         </aside>
-        <div className={styles.mainCol}>
-          <header className={styles.headerTwo}>{identity}</header>
-          {template.main.map((s) => renderSection(s, ctx))}
-          {showBenin && <p className={styles.references}>{labels.references}</p>}
-        </div>
       </div>
     );
   }
 
+  // ---- one column, optionally under a full-width band ---------------------
   return (
-    <div id={id} className={styles.sheet} data-cv-sheet data-template={template.id}>
+    <div {...sheetProps}>
       <header className={styles.header}>
+        {layout.header === "bandPhoto" && showBenin && data.photo && (
+          <img src={data.photo} alt="" className={styles.photoBand} />
+        )}
         <div className={styles.headerText}>
           {identity}
           {template.showLinksFirst && linkRow}
-          {contact.length > 0 && (
-            <p className={styles.contact}>
-              {contact.map((c, i) => (
-                <span key={c.text}>
-                  {i > 0 && " · "}
-                  <ContactBit item={c} />
-                </span>
-              ))}
-            </p>
-          )}
+          {contactRow}
           {!template.showLinksFirst && linkRow}
           {civil && <p className={styles.civil}>{civil}</p>}
         </div>
-        {showBenin && data.photo && <img src={data.photo} alt="" className={styles.photo} />}
+        {layout.header !== "bandPhoto" && showBenin && data.photo && (
+          <img src={data.photo} alt="" className={styles.photo} />
+        )}
       </header>
-      {template.sections.map((s) => renderSection(s, ctx))}
-      {showBenin && <p className={styles.references}>{labels.references}</p>}
+      <div className={styles.body}>
+        {mainSections.map((s) => renderSection(s, ctx))}
+        {showBenin && <p className={styles.references}>{labels.references}</p>}
+      </div>
     </div>
   );
 }

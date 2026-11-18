@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { EMPTY_DATA } from "../data/model";
 import {
   displayUrl,
+  kindOf,
+  missingImportant,
+  stepForCheck,
   hasCvContent,
   hasFigures,
   isEmail,
@@ -95,8 +98,11 @@ describe("runChecks", () => {
     const checks = runChecks({ ...full, experiences: [], projects: [{ id: "p" }] });
     expect(checks.find((c) => c.id === "experience").ok).toBe(true);
   });
-  it("fails the page check beyond one page", () => {
-    expect(runChecks(full, { pages: 2 }).find((c) => c.id === "pages").ok).toBe(false);
+  // Un CV de deux pages n'est pas un défaut : la règle a été retirée, et
+  // elle ne doit pas revenir par une autre porte.
+  it("never judges a CV on its number of pages", () => {
+    expect(runChecks(full, { pages: 3 }).some((c) => c.id === "pages")).toBe(false);
+    expect(runChecks(full).some((c) => c.id === "pages")).toBe(false);
   });
   it("stays quiet about figures until something is described", () => {
     expect(runChecks(full).some((c) => c.id === "figures")).toBe(false);
@@ -143,5 +149,92 @@ describe("hasCvContent", () => {
   });
   it("accepts a name with one section", () => {
     expect(hasCvContent({ ...EMPTY_DATA, firstName: "Aïcha", jobTitle: "Développeuse" })).toBe(true);
+  });
+});
+
+describe("missingImportant", () => {
+  const full = {
+    firstName: "Aïcha",
+    lastName: "DOSSOU",
+    jobTitle: "Développeuse web",
+    email: "a@example.com",
+    phone: "+229 01 97 00 14 22",
+    summary: "x".repeat(120),
+    education: [{ id: "e" }],
+    certifications: [],
+    experiences: [{ id: "x" }],
+    projects: [],
+    skills: [{ id: "a" }, { id: "b" }, { id: "c" }],
+    languages: [],
+    photo: "data:,",
+  };
+
+  it("lets a complete CV through without a word", () => {
+    expect(missingImportant(runChecks(full))).toEqual([]);
+  });
+
+  // Ce qui améliore un CV ne doit pas bloquer quelqu'un au téléchargement :
+  // seule l'absence de l'essentiel mérite qu'on l'arrête.
+  it("stays quiet about what only improves a CV", () => {
+    const thin = { ...full, summary: "", skills: [], photo: null };
+    expect(missingImportant(runChecks(thin, { region: "benin" }))).toEqual([]);
+  });
+
+  it("names what stops a recruiter from acting", () => {
+    const bare = { ...full, email: "", phone: "", experiences: [], projects: [] };
+    const ids = missingImportant(runChecks(bare)).map((c) => c.id);
+    expect(ids).toContain("email");
+    expect(ids).toContain("phone");
+    expect(ids).toContain("experience");
+  });
+
+  it("points each gap at the step that fixes it", () => {
+    expect(stepForCheck("email")).toBe(0);
+    expect(stepForCheck("education")).toBe(2);
+    expect(stepForCheck("experience")).toBe(3);
+    expect(stepForCheck("inconnu")).toBe(0);
+  });
+});
+
+describe("nature of each check", () => {
+  // Le principe : un triangle d'alerte ne se pose que sur ce que l'outil
+  // constate objectivement. Un conseil qu'il ne sait pas vérifier — ou dont
+  // le seuil relève du jugement — n'a pas à être présenté comme un défaut.
+  it("marks as a defect only what the tool can actually verify", () => {
+    for (const id of ["name", "title", "email", "phone", "education", "experience", "photo"])
+      expect(kindOf(id), id).toBe("fix");
+  });
+
+  it("marks advice as advice", () => {
+    for (const id of ["summary", "skills", "figures"]) expect(kindOf(id), id).toBe("tip");
+  });
+
+  // « Un résultat chiffré » est irréductiblement un conseil : le test se
+  // trompe dans les deux sens, donc il ne doit jamais porter d'alerte.
+  it("keeps the figures check out of the defect list for good reason", () => {
+    expect(kindOf("figures")).toBe("tip");
+    expect(hasFigures({ experiences: [{ description: "React 18" }], projects: [] })).toBe(true);
+    expect(
+      hasFigures({
+        experiences: [{ description: "Clôture ramenée de trois semaines à huit jours" }],
+        projects: [],
+      }),
+    ).toBe(false);
+  });
+
+  it("gives every check a nature", () => {
+    const all = runChecks(
+      { ...EMPTY_DATA, experiences: [{ id: "x", description: "Accueil." }] },
+      { region: "benin" },
+    );
+    for (const c of all) expect(["fix", "tip"], c.id).toContain(c.kind);
+  });
+
+  // Tout ce qui bloque le téléchargement doit être un défaut : on
+  // n'interrompt personne pour un conseil.
+  it("never blocks a download on a piece of advice", () => {
+    const bare = { ...EMPTY_DATA, experiences: [{ id: "x", description: "Accueil." }] };
+    for (const c of missingImportant(runChecks(bare, { region: "benin" })))
+      expect(kindOf(c.id), c.id).toBe("fix");
   });
 });

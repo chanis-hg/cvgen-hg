@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "../App";
 import CVSheet from "../components/CVSheet";
 import { normalizeData } from "../data/model";
+import { LAYOUT_IDS } from "../data/layouts";
+import { TEMPLATE_IDS } from "../data/templates";
+import { SKILL_STYLES, TITLE_STYLES } from "../data/model";
 
 function openEditor() {
   document.body.insertAdjacentHTML("beforeend", '<div id="print-root"></div>');
@@ -60,10 +63,65 @@ describe("CVSheet", () => {
     expect(headings(sheet({ templateId: "hybride" }).container)[0]).toBe("Compétences clés");
   });
 
-  it("uses two columns for the showcase model", () => {
-    const { container } = sheet({ templateId: "vitrine" });
+  // La disposition est un axe indépendant du modèle : c'est elle, et elle
+  // seule, qui décide de la géométrie de la page.
+  it("builds a side column when the layout asks for one", () => {
+    const { container } = sheet({ templateId: "vitrine", layout: "colonneSombre" });
     expect(container.querySelector("aside")).not.toBeNull();
     expect(headings(container)).toContain("Contact");
+    expect(container.querySelector("[data-layout]").dataset.layout).toBe("colonneSombre");
+  });
+
+  it("stays on one column for the same model under a one-column layout", () => {
+    const { container } = sheet({ templateId: "vitrine", layout: "classique" });
+    expect(container.querySelector("aside")).toBeNull();
+  });
+
+  // Le nom doit sortir en premier du texte extrait : un lecteur automatique
+  // suit le flux du document, pas la colonne qu'il voit à gauche.
+  it("puts the name before the side column in the reading order", () => {
+    const { container } = sheet({ templateId: "stage", layout: "colonneGauche" });
+    const text = container.textContent;
+    expect(text.indexOf("DOSSOU")).toBeLessThan(text.indexOf("Contact"));
+  });
+
+  // Quatre styles de titre, trois rendus de compétences : ce sont eux qui
+  // changent le plus la personnalité à disposition égale, donc chacun doit
+  // produire un rendu distinct.
+  it("gives every heading style its own rendering", () => {
+    const seen = new Set();
+    for (const id of TITLE_STYLES) {
+      const { container } = sheet({ templateId: "stage", titleStyle: id });
+      seen.add(container.querySelector("[data-cv-sheet]").className);
+    }
+    expect(seen.size).toBe(TITLE_STYLES.length);
+  });
+
+  it("renders skills three ways without losing a single one", () => {
+    for (const id of SKILL_STYLES) {
+      const { container } = sheet({ templateId: "stage", skillStyle: id });
+      const text = container.textContent;
+      for (const name of ["React", "Laravel"]) expect(text, id).toContain(name);
+    }
+  });
+
+  // Les puces arrondies doivent rester des éléments de liste : une image ou
+  // un pseudo-élément décoratif ne ressortirait pas du texte extrait.
+  it("keeps chipped skills as real list items", () => {
+    const { container } = sheet({ templateId: "stage", skillStyle: "pastilles" });
+    const items = [...container.querySelectorAll("li")].map((n) => n.textContent);
+    expect(items).toContain("React");
+  });
+
+  it("gives every layout its own rendering", () => {
+    const seen = new Set();
+    for (const id of LAYOUT_IDS) {
+      const { container } = sheet({ templateId: "stage", layout: id });
+      const root = container.querySelector("[data-layout]");
+      expect(root.dataset.layout).toBe(id);
+      seen.add(root.className);
+    }
+    expect(seen.size).toBe(LAYOUT_IDS.length);
   });
 
   it("shows photo, civil status and references only in Benin mode", () => {
@@ -302,16 +360,38 @@ describe("date fields", () => {
 });
 
 describe("routing", () => {
-  it("shows the landing page by default and the five models on the picker", async () => {
+  it("shows the landing page by default and every model on the picker", async () => {
     window.location.hash = "";
     const { unmount } = render(<App />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("Ton parcours");
     unmount();
     window.location.hash = "#/models";
     render(<App />);
-    expect(await screen.findAllByRole("button", { name: /Utiliser ce modèle|Modèle actuel/ })).toHaveLength(
-      5,
-    );
+    const grid = await screen.findByRole("list", { name: "Modèles de CV" });
+    expect(within(grid).getAllByRole("button")).toHaveLength(TEMPLATE_IDS.length);
+  });
+
+  it("opens a filled sample and offers both ways to use the template", async () => {
+    const user = userEvent.setup();
+    window.location.hash = "#/models";
+    render(<App />);
+    const grid = await screen.findByRole("list", { name: "Modèles de CV" });
+    await user.click(within(grid).getByRole("button", { name: /Premier stage/ }));
+    const dialog = await screen.findByRole("dialog");
+    // the sample is a real CV, not a drawing of one
+    expect(within(dialog).getByText(/Aïcha/)).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Partir de cet exemple" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Prendre le modèle vide" })).toBeInTheDocument();
+  });
+
+  it("loads the sample content into the editor", async () => {
+    const user = userEvent.setup();
+    window.location.hash = "#/models";
+    render(<App />);
+    const grid = await screen.findByRole("list", { name: "Modèles de CV" });
+    await user.click(within(grid).getByRole("button", { name: /Développeur/ }));
+    await user.click(await screen.findByRole("button", { name: "Partir de cet exemple" }));
+    expect(await screen.findByLabelText(/Prénoms/)).toHaveValue("Serge");
   });
 
   it("switches the interface language", async () => {

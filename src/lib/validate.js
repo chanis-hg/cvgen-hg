@@ -62,7 +62,34 @@ export function hasFigures(data) {
   return [...data.experiences, ...data.projects].some((item) => /\d/.test(item.description || ""));
 }
 
-export function runChecks(data, { pages = 1, region = "benin" } = {}) {
+// Deux natures de contrôle, et elles ne se valent pas.
+//
+// « fix » : un défaut que l'outil constate objectivement. Un e-mail mal
+// formé est mal formé, point. Ceux-là portent un triangle.
+//
+// « tip » : un conseil. Soit le seuil relève du jugement (pourquoi trois
+// compétences et pas deux ?), soit l'outil est tout simplement incapable
+// de vérifier ce qu'il demande — aucune expression régulière ne distingue
+// un résultat mesuré d'un numéro de version. Leur donner le même triangle
+// qu'à un défaut ferait porter au panneau une autorité qu'il n'a pas.
+const KIND = {
+  name: "fix",
+  title: "fix",
+  email: "fix",
+  phone: "fix",
+  education: "fix",
+  experience: "fix",
+  photo: "fix",
+  summary: "tip",
+  skills: "tip",
+  figures: "tip",
+};
+
+export function kindOf(id) {
+  return KIND[id] ?? "tip";
+}
+
+export function runChecks(data, { region = "benin" } = {}) {
   const summaryLength = data.summary.trim().length;
   const described = [...data.experiences, ...data.projects].some((item) => (item.description || "").trim());
   const checks = [
@@ -74,12 +101,11 @@ export function runChecks(data, { pages = 1, region = "benin" } = {}) {
     { id: "education", ok: data.education.length > 0 },
     { id: "experience", ok: data.experiences.length + data.projects.length > 0 },
     { id: "skills", ok: data.skills.length >= 3 },
-    { id: "pages", ok: pages <= 1 },
   ];
   // only worth raising once something is actually described
   if (described) checks.push({ id: "figures", ok: hasFigures(data) });
   if (region === "benin") checks.push({ id: "photo", ok: Boolean(data.photo) });
-  return checks;
+  return checks.map((c) => ({ ...c, kind: kindOf(c.id) }));
 }
 
 export function hasCvContent(data) {
@@ -93,4 +119,33 @@ export function hasCvContent(data) {
       data.skills.length >
     0;
   return hasName && (hasText || hasItems);
+}
+
+// Tout ce qu'un contrôle signale n'a pas le même poids. Ces six-là
+// empêchent le CV de faire son travail : sans nom on ne sait pas qui
+// postule, sans contact on ne peut pas rappeler, sans parcours il n'y a
+// rien à lire. Le reste — l'accroche, les chiffres, la photo — améliore un
+// CV sans le rendre inutilisable, et ne mérite donc pas d'arrêter
+// quelqu'un au moment du téléchargement.
+const IMPORTANT = new Set(["name", "title", "email", "phone", "education", "experience"]);
+
+// À quelle étape se trouve ce qui manque, pour pouvoir y emmener la
+// personne directement plutôt que de la laisser chercher.
+const CHECK_STEP = {
+  name: 0,
+  title: 0,
+  email: 0,
+  phone: 0,
+  summary: 1,
+  education: 2,
+  experience: 3,
+  skills: 4,
+};
+
+export function missingImportant(checks) {
+  return checks.filter((c) => !c.ok && IMPORTANT.has(c.id));
+}
+
+export function stepForCheck(id) {
+  return CHECK_STEP[id] ?? 0;
 }

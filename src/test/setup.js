@@ -1,6 +1,17 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach } from "vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
+
+/**
+ * The editor is loaded on demand, so the tests that open it wait for a dynamic
+ * import to resolve and for React to render the result. Testing Library allows
+ * one second for that by default, which is plenty on a fast machine and not
+ * enough on a slow or busy one: the suite then stops on the loading fallback
+ * and reports a missing button that is simply not there yet. The wait below is
+ * a ceiling, not a delay — a test that finds its element sooner returns sooner,
+ * so nothing is slower for it.
+ */
+configure({ asyncUtilTimeout: 15000 });
 
 class ResizeObserverStub {
   observe() {}

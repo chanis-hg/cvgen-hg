@@ -10,8 +10,11 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 max(16px, calc((100vw - 1120px) / 2));
-  background: rgb(247 246 243 / 90%);
-  backdrop-filter: blur(10px);
+  /* La valeur était figée sur l'ancien fond crème : en thème sombre on
+     obtenait du texte clair sur un voile clair. Le mélange part maintenant
+     de la surface du thème. */
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(12px) saturate(140%);
   border-bottom: 1px solid var(--border);
 }
 .back {
@@ -80,7 +83,7 @@
 }
 .filter[aria-pressed="true"] {
   background: var(--ink);
-  color: #fff;
+  color: var(--ink-on);
   border-color: var(--ink);
 }
 .grid {
@@ -88,15 +91,32 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-  gap: 20px;
+  /* two per row on a phone: small enough to scan a whole shelf, large
+     enough to tell one layout from another. The real reading happens in
+     the dialog. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (min-width: 700px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 18px;
+  }
 }
 .card {
   composes: u-rise from global;
-  display: grid;
-  grid-template-columns: 150px 1fr;
-  gap: 20px;
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  /* fill the grid cell, so cards on a row share a height whatever the
+     length of their description */
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -104,6 +124,11 @@
     border-color var(--t-base) var(--e-out),
     box-shadow var(--t-base) var(--e-out),
     transform var(--t-base) var(--e-out);
+}
+/* the sheet is drawn on white, so it needs its own edge against the card */
+.preview {
+  display: block;
+  border-bottom: 1px solid var(--border);
 }
 .card:hover {
   transform: translate3d(0, -2px, 0);
@@ -116,9 +141,25 @@
 }
 .cardBody {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
+  gap: 4px;
+  padding: 12px 14px 14px;
+}
+.cardWho {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.badge {
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 /* cards in a row share a height, so the action sits on the floor of each */
 .cardBody > :last-child {
@@ -135,7 +176,7 @@
   gap: 6px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: #ece9e1;
+  background: var(--subtle);
   font-size: 12.5px;
   font-weight: 600;
 }
@@ -149,7 +190,17 @@
   color: var(--attention);
 }
 .cardTitle {
-  font-size: 26px;
+  /* the title sits under a thumbnail now, not beside a block of facts:
+     26px overflowed the two-column phone grid and clipped the longer names */
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 700px) {
+  .cardTitle {
+    font-size: 19px;
+  }
 }
 /* Stacked rather than two columns: inside a card this narrow a label column
    squeezed every answer into three or four lines. */
@@ -237,20 +288,106 @@
   margin-bottom: 6px;
 }
 
-@media (max-width: 900px) {
-  .grid {
+@media (max-width: 560px) {
+  .notes {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 560px) {
-  .card {
-    grid-template-columns: 1fr;
-  }
-  .thumb {
-    max-width: 150px;
-  }
-  .notes {
-    grid-template-columns: 1fr;
-  }
+/* ---- large preview dialog ---- */
+.sheetWrap {
+  display: flex;
+  flex-direction: column;
+}
+.sheetHead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.sheetTitle {
+  margin: 0;
+  font-size: 18px;
+}
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.close:hover {
+  border-color: var(--border);
+}
+.sheetBody {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 18px;
+}
+.sheetPage {
+  flex: 1 1 320px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.sheetSide {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sampleNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.actions,
+.confirm .options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius);
+}
+.confirm p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
